@@ -1,26 +1,51 @@
-# Environment variables (keep .env.example in repo instead)
-.env.local
-.env.*.local
-
-# Dependencies
+# dependencies
 node_modules/
-package-lock.json
-bun.lock
-bun.lockb
 
-# Build
+# Expo
+.expo/
 dist/
-build/
+web-build/
+expo-env.d.ts
 
-# IDE
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# IDE / OS
 .vscode/
 .idea/
-*.swp
-*.swo
 .DS_Store
-
-# OS
 Thumbs.db
+*.pem
 
-# Logs
+# env files (secrets never committed; .env.example IS committed)
+.env
+.env.local
+.env*.local
+.env.server.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# Vercel
+.vercel
+
+# logs
 *.log

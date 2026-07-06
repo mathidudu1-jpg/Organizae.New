@@ -1,52 +1,29 @@
 /** @type {import('tailwindcss').Config} */
-export default {
-  content: ['./index.html', './src/**/*.{ts,tsx}'],
+module.exports = {
+  content: ['./src/**/*.{js,jsx,ts,tsx}'],
+  presets: [require('nativewind/preset')],
   theme: {
     extend: {
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        // C6-inspired, LIGHT theme only
+        background: '#F6F7F9', // fundo geral (cinza-gelo)
+        surface: '#FFFFFF', // cards
+        foreground: '#0B0F14', // texto principal
+        muted: '#EEF0F3', // fundos sutis / trilhas
+        'muted-foreground': '#6B7280', // texto secundário
+        border: '#E7E9EC',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: '#0B8A63', // teal Organizae
+          foreground: '#FFFFFF',
         },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
-        },
+        accent: '#E9F6F0', // realce suave teal
+        success: '#12805C',
+        danger: '#E5484D',
+        warning: '#E6A200',
       },
-      keyframes: {
-        'shimmer-bg': {
-          '0%': { backgroundPosition: '0% 50%' },
-          '100%': { backgroundPosition: '300% 50%' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-5px)' },
-        },
-      },
-      animation: {
-        'shimmer-bg': 'shimmer-bg 3s linear infinite',
-        float: 'float 3s ease-in-out infinite',
+      borderRadius: {
+        card: '20px',
+        pill: '999px',
       },
     },
   },

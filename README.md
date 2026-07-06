@@ -1,39 +1,35 @@
-# Organizae.New
+# Organizae
 
-Reconstrução do app Organizae.Space começando do zero.
-
-## O que já existe
-
-- **Página de login** (`/`) — clone visual autossuficiente da tela original: painel esquerdo com a mulher + gradiente verde esmeralda, e o lado branco com o formulário. Inclui as 3 abas (Entrar / Criar conta / Recuperar senha), validação básica no cliente e indicador de força de senha. Textos fixos em português (sem i18n) e handlers como stubs — a lógica real (Supabase) será reconstruída depois.
-- **Assets** — imagens públicas em `/public` e `/src/assets` (logos, favicons, hero, logos de bancos).
-- **`.env`** — chaves do Supabase e Brapi.
+Assistente pessoal + financeiro ("resolvedor de vida") — Web + iOS + Android a partir de **um único código**.
 
 ## Stack
 
-Vite + React 18 + TypeScript + Tailwind CSS. Ícones via `lucide-react`.
-
-## Estrutura
-
-```
-src/
-  pages/LoginPage.tsx              # página de login (layout + 3 formulários)
-  components/
-    DesktopHeroPanel.tsx           # painel da mulher + gradiente verde (desktop)
-    PasswordStrengthIndicator.tsx  # indicador de força de senha
-    ui.tsx                         # Button e Input estilizados
-  assets/                          # imagens do app
-public/                            # favicons, logos, og-images
-```
+- **Expo** (SDK 57, RN 0.86, React 19) + **Expo Router** (navegação por arquivos)
+- **NativeWind** (Tailwind no RN) + **React Native Web** (alvo web) — tema **Light** (inspirado no C6)
+- **Reanimated** (motion nativo) · **Supabase** (auth + Postgres)
 
 ## Rodar local
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+cp .env.example .env   # preencha EXPO_PUBLIC_SUPABASE_*
+npm run web            # web
+npm run ios            # iOS (precisa de macOS ou Expo Go)
+npm run android        # Android
 ```
 
-## Build
+> No Windows, rode pelo caminho limpo `C:\organizae-dev` (junction) para evitar problemas de caminho com acento.
 
-```bash
-npm run build
+## Estrutura
+
 ```
+src/
+  app/
+    (app)/          # área logada: Home + Iza (tabs no mobile)
+    (auth)/login    # login
+    _layout.tsx     # raiz
+  lib/supabase.ts   # cliente Supabase (AsyncStorage + url-polyfill)
+assets/brand/       # logos, hero, favicons
+```
+
+Secrets (service_role, senha do DB) ficam em `.env.server.local` (gitignored) — nunca commitados.
