@@ -1,0 +1,23 @@
+# Organizae - Controle Financeiro Pessoal
+# https://organizae.space
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://organizae.space/sitemap.xml
+
+# Crawl-delay for considerate crawling
+Crawl-delay: 1

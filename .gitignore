@@ -1,0 +1,26 @@
+# Environment variables (keep .env.example in repo instead)
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+package-lock.json
+bun.lock
+bun.lockb
+
+# Build
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Logs
+*.log
