@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/app/Sidebar';
 import { Header } from '@/components/app/Header';
 import { MobileNav } from '@/components/app/MobileNav';
 import { Dashboard } from '@/components/app/Dashboard';
+import { FloatingButtons } from '@/components/app/FloatingButtons';
 
 const TAB_TITLES: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -65,6 +66,9 @@ export default function HomePage() {
 
       {/* Mobile nav "ilha" */}
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Floating action buttons */}
+      <FloatingButtons />
     </div>
   );
 }
