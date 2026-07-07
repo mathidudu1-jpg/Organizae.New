@@ -6,6 +6,12 @@ import type { TableInsert, TableUpdate, Transaction } from '@/types/database';
 export type TransactionInsert = TableInsert<'transactions'>;
 export type TransactionUpdate = TableUpdate<'transactions'>;
 
+export async function getTransaction(id: string): Promise<Transaction> {
+  const { data, error } = await supabase.from('transactions').select('*').eq('id', id).single();
+  if (error) throw error;
+  return data;
+}
+
 export async function listTransactions(monthRef?: string): Promise<Transaction[]> {
   let query = supabase.from('transactions').select('*').order('date', { ascending: false });
   if (monthRef) query = query.eq('month_ref', monthRef);

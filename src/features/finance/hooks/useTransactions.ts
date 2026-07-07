@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createTransaction,
   deleteTransaction,
+  getTransaction,
   listTransactions,
   updateTransaction,
   type TransactionInsert,
@@ -14,6 +15,14 @@ export function useTransactions(monthRef?: string) {
   return useQuery({
     queryKey: financeKeys.transactions(monthRef),
     queryFn: () => listTransactions(monthRef),
+  });
+}
+
+export function useTransaction(id: string | undefined) {
+  return useQuery({
+    queryKey: financeKeys.transaction(id ?? ''),
+    queryFn: () => getTransaction(id!),
+    enabled: !!id,
   });
 }
 
@@ -38,6 +47,11 @@ export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteTransaction(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: financeKeys.all }),
+    onSuccess: (_data, id) => {
+      // A linha não existe mais: remover do cache (refetch daria erro),
+      // e só então invalidar as listas.
+      qc.removeQueries({ queryKey: financeKeys.transaction(id) });
+      qc.invalidateQueries({ queryKey: financeKeys.transactionsRoot });
+    },
   });
 }

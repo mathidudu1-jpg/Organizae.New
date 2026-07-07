@@ -1,16 +1,11 @@
 import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react-native';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button, Input } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import { colors } from '@/theme/colors';
 
 type Mode = 'login' | 'signup';
 
@@ -100,78 +95,58 @@ export default function Login() {
 
             {/* Nome (só signup) */}
             {isSignup && (
-              <View className="mt-6">
-                <View className="flex-row items-center h-12 rounded-2xl bg-background border border-border px-4">
-                  <User color="#6B7280" size={16} />
-                  <TextInput
-                    className="flex-1 ml-3 text-foreground text-sm"
-                    placeholder="Seu nome"
-                    placeholderTextColor="#9AA1A9"
-                    value={name}
-                    onChangeText={setName}
-                    testID="input-name"
-                  />
-                </View>
-              </View>
+              <Input
+                containerClassName="mt-6"
+                icon={<User color={colors.mutedForeground} size={16} />}
+                placeholder="Seu nome"
+                value={name}
+                onChangeText={setName}
+                testID="input-name"
+              />
             )}
 
             {/* Email */}
-            <View className={isSignup ? 'mt-4' : 'mt-6'}>
-              <View className="flex-row items-center h-12 rounded-2xl bg-background border border-border px-4">
-                <Mail color="#6B7280" size={16} />
-                <TextInput
-                  className="flex-1 ml-3 text-foreground text-sm"
-                  placeholder="seu@email.com"
-                  placeholderTextColor="#9AA1A9"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                  testID="input-email"
-                />
-              </View>
-            </View>
+            <Input
+              containerClassName={isSignup ? 'mt-4' : 'mt-6'}
+              icon={<Mail color={colors.mutedForeground} size={16} />}
+              placeholder="seu@email.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              testID="input-email"
+            />
 
             {/* Senha */}
-            <View className="mt-4">
-              <View className="flex-row items-center h-12 rounded-2xl bg-background border border-border px-4">
-                <Lock color="#6B7280" size={16} />
-                <TextInput
-                  className="flex-1 ml-3 text-foreground text-sm"
-                  placeholder="••••••••••"
-                  placeholderTextColor="#9AA1A9"
-                  secureTextEntry={!showPassword}
-                  value={password}
-                  onChangeText={setPassword}
-                  testID="input-password"
-                />
+            <Input
+              containerClassName="mt-4"
+              icon={<Lock color={colors.mutedForeground} size={16} />}
+              placeholder="••••••••••"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              testID="input-password"
+              right={
                 <Pressable onPress={() => setShowPassword((s) => !s)} hitSlop={8}>
                   {showPassword ? (
-                    <EyeOff color="#6B7280" size={16} />
+                    <EyeOff color={colors.mutedForeground} size={16} />
                   ) : (
-                    <Eye color="#6B7280" size={16} />
+                    <Eye color={colors.mutedForeground} size={16} />
                   )}
                 </Pressable>
-              </View>
-            </View>
+              }
+            />
 
             {error ? <Text className="text-danger text-xs mt-3">{error}</Text> : null}
 
             {/* Ação principal */}
-            <Pressable
+            <Button
+              title={isSignup ? 'Criar conta' : 'Entrar'}
               onPress={handleSubmit}
-              disabled={loading}
-              className="mt-6 h-12 rounded-2xl bg-primary items-center justify-center active:opacity-90"
+              loading={loading}
+              className="mt-6"
               testID="btn-submit"
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text className="text-primary-foreground font-semibold text-sm">
-                  {isSignup ? 'Criar conta' : 'Entrar'}
-                </Text>
-              )}
-            </Pressable>
+            />
 
             {/* Alternar modo */}
             <View className="flex-row items-center justify-center mt-5">

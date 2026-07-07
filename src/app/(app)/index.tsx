@@ -151,9 +151,9 @@ export default function Home() {
                     {recent.map((t, i) => {
                       const isIncome = t.type === 'income';
                       return (
-                        <View
-                          key={t.id}
-                          className={`flex-row items-center gap-3 px-4 py-3.5 ${
+                        <Link key={t.id} href={`/transaction/${t.id}`} asChild>
+                        <Pressable
+                          className={`flex-row items-center gap-3 px-4 py-3.5 active:bg-muted ${
                             i > 0 ? 'border-t border-border' : ''
                           }`}
                         >
@@ -187,7 +187,8 @@ export default function Home() {
                             {isIncome ? '+' : '-'}
                             {formatCurrency(t.amount)}
                           </Text>
-                        </View>
+                        </Pressable>
+                        </Link>
                       );
                     })}
                   </View>

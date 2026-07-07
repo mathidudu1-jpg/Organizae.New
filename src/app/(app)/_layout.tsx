@@ -49,8 +49,9 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => <Sparkles color={color} size={size ?? 22} />,
         }}
       />
-      {/* Fora da tab bar: tela de novo lançamento */}
+      {/* Fora da tab bar: telas de lançamento */}
       <Tabs.Screen name="new" options={{ href: null }} />
+      <Tabs.Screen name="transaction/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
