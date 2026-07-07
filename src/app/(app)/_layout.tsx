@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
-import { LayoutDashboard, Sparkles } from 'lucide-react-native';
+import { CreditCard, LayoutDashboard, Sparkles } from 'lucide-react-native';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -43,15 +43,23 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="cards"
+        options={{
+          title: 'Cartões',
+          tabBarIcon: ({ color, size }) => <CreditCard color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
         name="iza"
         options={{
           title: 'Iza',
           tabBarIcon: ({ color, size }) => <Sparkles color={color} size={size ?? 22} />,
         }}
       />
-      {/* Fora da tab bar: telas de lançamento */}
+      {/* Fora da tab bar: telas de formulário */}
       <Tabs.Screen name="new" options={{ href: null }} />
       <Tabs.Screen name="transaction/[id]" options={{ href: null }} />
+      <Tabs.Screen name="card-new" options={{ href: null }} />
     </Tabs>
   );
 }

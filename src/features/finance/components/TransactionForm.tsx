@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Button, Chip } from '@/components/ui';
+import { useCards } from '@/features/finance/hooks/useCards';
 import { useCategories } from '@/features/finance/hooks/useCategories';
 import { todayISO } from '@/lib/format';
 import { colors } from '@/theme/colors';
@@ -14,6 +15,7 @@ export interface TransactionFormValues {
   description: string;
   date: string; // YYYY-MM-DD
   category_id: string | null;
+  card_id: string | null;
 }
 
 interface TransactionFormProps {
@@ -74,6 +76,7 @@ export function TransactionForm({
   deleting = false,
 }: TransactionFormProps) {
   const { data: categories } = useCategories();
+  const { data: cards } = useCards();
 
   const [type, setType] = useState<Exclude<EntryType, 'transfer'>>(
     initial?.type === 'income' ? 'income' : 'expense'
@@ -81,6 +84,7 @@ export function TransactionForm({
   const [amountRaw, setAmountRaw] = useState(initial ? toAmountBR(initial.amount) : '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [categoryId, setCategoryId] = useState<string | null>(initial?.category_id ?? null);
+  const [cardId, setCardId] = useState<string | null>(initial?.card_id ?? null);
   const [dateBR, setDateBR] = useState(toBR(initial?.date ?? todayISO()));
   const [error, setError] = useState<string | null>(null);
 
@@ -92,6 +96,7 @@ export function TransactionForm({
   const switchType = (next: Exclude<EntryType, 'transfer'>) => {
     setType(next);
     setCategoryId(null);
+    if (next === 'income') setCardId(null); // entradas não vão em cartão
     setError(null);
   };
 
@@ -113,7 +118,14 @@ export function TransactionForm({
     }
 
     try {
-      await onSubmit({ type, amount, description: description.trim(), date: dateISO, category_id: categoryId });
+      await onSubmit({
+        type,
+        amount,
+        description: description.trim(),
+        date: dateISO,
+        category_id: categoryId,
+        card_id: type === 'expense' ? cardId : null,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível salvar. Tente de novo.');
     }
@@ -219,6 +231,26 @@ export function TransactionForm({
           </View>
         </View>
       </View>
+
+      {/* Pagamento (só despesas com cartões cadastrados) */}
+      {isExpense && (cards ?? []).length > 0 && (
+        <View className="mt-4">
+          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Pagamento
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            <Chip label="Conta" selected={cardId === null} onPress={() => setCardId(null)} />
+            {(cards ?? []).map((c) => (
+              <Chip
+                key={c.id}
+                label={c.last4 ? `${c.name} · ${c.last4}` : c.name}
+                selected={cardId === c.id}
+                onPress={() => setCardId(c.id)}
+              />
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* Categoria */}
       <View className="mt-4">

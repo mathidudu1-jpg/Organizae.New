@@ -12,6 +12,23 @@ export async function getTransaction(id: string): Promise<Transaction> {
   return data;
 }
 
+/** Compras de um cartão dentro de um ciclo de fatura (from/to inclusivos). */
+export async function listCardTransactions(
+  cardId: string,
+  from: string,
+  to: string
+): Promise<Transaction[]> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('card_id', cardId)
+    .gte('date', from)
+    .lte('date', to)
+    .order('date', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function listTransactions(monthRef?: string): Promise<Transaction[]> {
   let query = supabase.from('transactions').select('*').order('date', { ascending: false });
   if (monthRef) query = query.eq('month_ref', monthRef);

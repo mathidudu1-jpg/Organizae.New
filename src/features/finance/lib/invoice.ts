@@ -1,0 +1,147 @@
+// ============================================================
+// Motor de fatura de cartão de crédito — funções PURAS.
+//
+// Convenções (únicas e canônicas — não divergir!):
+//  · Datas são strings YYYY-MM-DD, sem timezone.
+//  · Uma fatura é identificada pelo MÊS DO VENCIMENTO
+//    ("Fatura de agosto" = a que vence em agosto).
+//  · Compra até o dia de fechamento (inclusive) entra na fatura
+//    que fecha naquele mês; depois disso, na seguinte.
+//  · Dias 29/30/31 são clampados ao último dia de meses curtos.
+//  · A fatura ABERTA hoje é a do ciclo que contém a data de hoje.
+// ============================================================
+
+export interface CardCycleConfig {
+  /** Dia de fechamento (1–31). */
+  closingDay: number;
+  /** Dia de vencimento (1–31). */
+  dueDay: number;
+}
+
+export interface Invoice {
+  /** Mês do vencimento, YYYY-MM-01 — identifica a fatura. */
+  monthRef: string;
+  /** Primeiro dia do ciclo (inclusive). */
+  cycleStart: string;
+  /** Dia de fechamento (inclusive). */
+  cycleEnd: string;
+  /** Data de vencimento. */
+  dueDate: string;
+  /** Melhor dia de compra (dia seguinte ao fechamento). */
+  bestBuyDate: string;
+}
+
+// ---------- helpers de data (puros) ----------
+
+interface YM {
+  y: number;
+  m: number; // 1–12
+}
+
+function daysInMonth(y: number, m: number): number {
+  return new Date(y, m, 0).getDate(); // dia 0 do mês seguinte
+}
+
+function clampDay(y: number, m: number, day: number): number {
+  return Math.min(day, daysInMonth(y, m));
+}
+
+function toISO(y: number, m: number, d: number): string {
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function parseISO(iso: string): { y: number; m: number; d: number } {
+  const [y, m, d] = iso.split('-').map(Number);
+  return { y, m, d };
+}
+
+function addMonths({ y, m }: YM, n: number): YM {
+  const total = y * 12 + (m - 1) + n;
+  return { y: Math.floor(total / 12), m: (total % 12) + 1 };
+}
+
+function addDaysISO(iso: string, n: number): string {
+  const { y, m, d } = parseISO(iso);
+  const date = new Date(y, m - 1, d + n);
+  return toISO(date.getFullYear(), date.getMonth() + 1, date.getDate());
+}
+
+/** Data de fechamento efetiva num dado mês (clampada). */
+function closingDateIn(ym: YM, closingDay: number): string {
+  return toISO(ym.y, ym.m, clampDay(ym.y, ym.m, closingDay));
+}
+
+// ---------- núcleo ----------
+
+/**
+ * A fatura cujo ciclo FECHA no mês `closingYM`.
+ * Ciclo: (fechamento do mês anterior)+1 … fechamento deste mês.
+ * Vencimento: dueDay no mesmo mês se dueDay > closingDay, senão no seguinte.
+ */
+function invoiceClosingIn(closingYM: YM, config: CardCycleConfig): Invoice {
+  const { closingDay, dueDay } = config;
+
+  const cycleEnd = closingDateIn(closingYM, closingDay);
+  const prevMonth = addMonths(closingYM, -1);
+  const cycleStart = addDaysISO(closingDateIn(prevMonth, closingDay), 1);
+
+  const dueYM = dueDay > closingDay ? closingYM : addMonths(closingYM, 1);
+  const dueDate = toISO(dueYM.y, dueYM.m, clampDay(dueYM.y, dueYM.m, dueDay));
+
+  return {
+    monthRef: toISO(dueYM.y, dueYM.m, 1),
+    cycleStart,
+    cycleEnd,
+    dueDate,
+    bestBuyDate: addDaysISO(cycleEnd, 1),
+  };
+}
+
+/**
+ * Em qual fatura cai uma compra feita em `purchaseDate`?
+ * Até o fechamento do mês (inclusive) → fecha neste mês; depois → no seguinte.
+ */
+export function invoiceForPurchase(purchaseDate: string, config: CardCycleConfig): Invoice {
+  const { y, m } = parseISO(purchaseDate);
+  const closesThisMonth = purchaseDate <= closingDateIn({ y, m }, config.closingDay);
+  return invoiceClosingIn(closesThisMonth ? { y, m } : addMonths({ y, m }, 1), config);
+}
+
+/** A fatura ABERTA em `today` (o ciclo que contém a data). */
+export function openInvoice(today: string, config: CardCycleConfig): Invoice {
+  return invoiceForPurchase(today, config);
+}
+
+/**
+ * Fatura identificada pelo mês do VENCIMENTO (monthRef YYYY-MM-01).
+ * Inverso de: vencimento no mesmo mês do fechamento (dueDay > closingDay)
+ * ou no mês seguinte (dueDay <= closingDay).
+ */
+export function invoiceForMonth(monthRef: string, config: CardCycleConfig): Invoice {
+  const { y, m } = parseISO(monthRef);
+  const dueYM: YM = { y, m };
+  const closingYM = config.dueDay > config.closingDay ? dueYM : addMonths(dueYM, -1);
+  return invoiceClosingIn(closingYM, config);
+}
+
+/** Rótulo humano: "Fatura de agosto". */
+export function invoiceLabel(invoice: Invoice, locale = 'pt-BR'): string {
+  const { y, m } = parseISO(invoice.monthRef);
+  const name = new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'long' });
+  return `Fatura de ${name}`;
+}
+
+/** Valida config de cartão. Retorna mensagem de erro ou null. */
+export function validateCycleConfig(config: CardCycleConfig): string | null {
+  const { closingDay, dueDay } = config;
+  if (!Number.isInteger(closingDay) || closingDay < 1 || closingDay > 31) {
+    return 'Dia de fechamento deve ser entre 1 e 31.';
+  }
+  if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) {
+    return 'Dia de vencimento deve ser entre 1 e 31.';
+  }
+  if (dueDay === closingDay) {
+    return 'Vencimento não pode ser no mesmo dia do fechamento.';
+  }
+  return null;
+}
