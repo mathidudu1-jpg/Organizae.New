@@ -1,5 +1,4 @@
-import { useRouter } from 'expo-router';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,29 +12,60 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { supabase } from '@/lib/supabase';
 
+type Mode = 'login' | 'signup';
+
 export default function Login() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [mode, setMode] = useState<Mode>('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async () => {
+  const isSignup = mode === 'signup';
+
+  // Sucesso não navega manualmente: o AuthProvider recebe a sessão e os
+  // layouts (auth)/(app) fazem o redirect sozinhos.
+  const handleSubmit = async () => {
     setError(null);
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       setError('Preencha email e senha.');
       return;
     }
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
+    if (isSignup && name.trim().length < 2) {
+      setError('Digite seu nome.');
       return;
     }
-    router.replace('/');
+
+    setLoading(true);
+    const result = isSignup
+      ? await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { data: { name: name.trim() } },
+        })
+      : await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setLoading(false);
+
+    if (result.error) {
+      const msg = result.error.message;
+      setError(
+        msg.includes('Invalid login credentials')
+          ? 'Email ou senha incorretos.'
+          : msg.includes('already registered')
+            ? 'Este email já tem conta. Use "Entrar".'
+            : msg.includes('at least 6')
+              ? 'A senha precisa ter pelo menos 6 caracteres.'
+              : msg
+      );
+    }
+  };
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError(null);
   };
 
   return (
@@ -59,13 +89,34 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
         >
           <View className="w-full max-w-[400px] mx-auto">
-            <Text className="text-[28px] font-bold text-foreground">Comece agora</Text>
+            <Text className="text-[28px] font-bold text-foreground">
+              {isSignup ? 'Criar conta' : 'Comece agora'}
+            </Text>
             <Text className="text-sm text-muted-foreground mt-1.5">
-              Acesse sua conta e organize suas finanças
+              {isSignup
+                ? 'Leva menos de um minuto.'
+                : 'Acesse sua conta e organize suas finanças'}
             </Text>
 
+            {/* Nome (só signup) */}
+            {isSignup && (
+              <View className="mt-6">
+                <View className="flex-row items-center h-12 rounded-2xl bg-background border border-border px-4">
+                  <User color="#6B7280" size={16} />
+                  <TextInput
+                    className="flex-1 ml-3 text-foreground text-sm"
+                    placeholder="Seu nome"
+                    placeholderTextColor="#9AA1A9"
+                    value={name}
+                    onChangeText={setName}
+                    testID="input-name"
+                  />
+                </View>
+              </View>
+            )}
+
             {/* Email */}
-            <View className="mt-6">
+            <View className={isSignup ? 'mt-4' : 'mt-6'}>
               <View className="flex-row items-center h-12 rounded-2xl bg-background border border-border px-4">
                 <Mail color="#6B7280" size={16} />
                 <TextInput
@@ -76,6 +127,7 @@ export default function Login() {
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
+                  testID="input-email"
                 />
               </View>
             </View>
@@ -91,6 +143,7 @@ export default function Login() {
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
+                  testID="input-password"
                 />
                 <Pressable onPress={() => setShowPassword((s) => !s)} hitSlop={8}>
                   {showPassword ? (
@@ -104,22 +157,33 @@ export default function Login() {
 
             {error ? <Text className="text-danger text-xs mt-3">{error}</Text> : null}
 
-            {/* Entrar */}
+            {/* Ação principal */}
             <Pressable
-              onPress={handleLogin}
+              onPress={handleSubmit}
               disabled={loading}
               className="mt-6 h-12 rounded-2xl bg-primary items-center justify-center active:opacity-90"
+              testID="btn-submit"
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text className="text-primary-foreground font-semibold text-sm">Entrar</Text>
+                <Text className="text-primary-foreground font-semibold text-sm">
+                  {isSignup ? 'Criar conta' : 'Entrar'}
+                </Text>
               )}
             </Pressable>
 
-            <Pressable onPress={() => router.replace('/')} className="mt-4 items-center">
-              <Text className="text-muted-foreground text-sm">Voltar para a Home</Text>
-            </Pressable>
+            {/* Alternar modo */}
+            <View className="flex-row items-center justify-center mt-5">
+              <Text className="text-muted-foreground text-sm">
+                {isSignup ? 'Já tem uma conta? ' : 'Não tem uma conta? '}
+              </Text>
+              <Pressable onPress={() => switchMode(isSignup ? 'login' : 'signup')} hitSlop={8}>
+                <Text className="text-primary font-semibold text-sm">
+                  {isSignup ? 'Entrar' : 'Criar conta'}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </View>

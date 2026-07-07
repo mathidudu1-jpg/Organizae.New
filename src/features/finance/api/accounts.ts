@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import type { Account, Insert, Update } from '@/types/database';
+import type { Account, TableInsert, TableUpdate } from '@/types/database';
 
-export type AccountInsert = Insert<Account>;
-export type AccountUpdate = Update<Account>;
+export type AccountInsert = TableInsert<'accounts'>;
+export type AccountUpdate = TableUpdate<'accounts'>;
 
 export async function listAccounts(): Promise<Account[]> {
   const { data, error } = await supabase

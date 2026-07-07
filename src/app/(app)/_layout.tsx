@@ -1,7 +1,24 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { LayoutDashboard, Sparkles } from 'lucide-react-native';
+import { ActivityIndicator, View } from 'react-native';
+
+import { useAuth } from '@/features/auth/AuthProvider';
 
 export default function AppLayout() {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color="#0B8A63" size="large" />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/login" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -32,6 +49,8 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => <Sparkles color={color} size={size ?? 22} />,
         }}
       />
+      {/* Fora da tab bar: tela de novo lançamento */}
+      <Tabs.Screen name="new" options={{ href: null }} />
     </Tabs>
   );
 }

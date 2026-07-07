@@ -1,9 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import type { Insert, Transaction, Update } from '@/types/database';
+import type { TableInsert, TableUpdate, Transaction } from '@/types/database';
 
-// user_id e month_ref são preenchidos pelo banco (default auth.uid() / coluna gerada).
-export type TransactionInsert = Omit<Insert<Transaction>, 'month_ref'>;
-export type TransactionUpdate = Update<Transaction>;
+// Tipos gerados do schema: colunas com default (user_id, currency, status…)
+// são opcionais; month_ref (coluna gerada) nem aparece.
+export type TransactionInsert = TableInsert<'transactions'>;
+export type TransactionUpdate = TableUpdate<'transactions'>;
 
 export async function listTransactions(monthRef?: string): Promise<Transaction[]> {
   let query = supabase.from('transactions').select('*').order('date', { ascending: false });

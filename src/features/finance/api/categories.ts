@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
-import type { Category, Insert } from '@/types/database';
+import type { Category, TableInsert } from '@/types/database';
 
-export type CategoryInsert = Insert<Category>;
+export type CategoryInsert = TableInsert<'categories'>;
 
 export async function listCategories(): Promise<Category[]> {
   const { data, error } = await supabase

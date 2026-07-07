@@ -28,11 +28,7 @@ export type Goal = Tables['goals']['Row'];
 export type Task = Tables['tasks']['Row'];
 export type CalendarEvent = Tables['events']['Row'];
 
-// Inserts/Updates por tabela (shape correto do supabase-js, com defaults opcionais).
+// Inserts/Updates por tabela — SEMPRE use estes (vêm do schema gerado:
+// colunas com default são opcionais, colunas geradas nem aparecem).
 export type TableInsert<K extends keyof Tables> = Tables[K]['Insert'];
 export type TableUpdate<K extends keyof Tables> = Tables[K]['Update'];
-
-// Helpers genéricos mantidos para a camada api atual.
-type Managed = 'id' | 'user_id' | 'created_at' | 'updated_at';
-export type Insert<T> = Omit<T, Managed>;
-export type Update<T> = Partial<Insert<T>>;
