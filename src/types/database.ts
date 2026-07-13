@@ -29,6 +29,8 @@ export type Goal = Tables['goals']['Row'];
 export type Task = Tables['tasks']['Row'];
 export type CalendarEvent = Tables['events']['Row'];
 export type InvoicePayment = Tables['invoice_payments']['Row'];
+export type Investment = Tables['investments']['Row'];
+export type InvestmentType = Enums['investment_type'];
 export type AccountBalance = Database['public']['Views']['account_balances']['Row'];
 
 // Inserts/Updates por tabela — SEMPRE use estes (vêm do schema gerado:

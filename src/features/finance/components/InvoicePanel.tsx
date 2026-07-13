@@ -9,7 +9,7 @@ import {
   useCardInvoice,
   useCreateInvoicePayment,
 } from '@/features/finance/hooks/useCardInvoice';
-import { addMonthsToMonthRef } from '@/features/finance/lib/invoice';
+import { addMonthsToMonthRef, interestFreeDays } from '@/features/finance/lib/invoice';
 import { formatCurrency, todayISO } from '@/lib/format';
 import { colors } from '@/theme/colors';
 import type { Card as CardRow } from '@/types/database';
@@ -157,6 +157,16 @@ export function InvoicePanel({ card }: { card: CardRow }) {
               {toBRShort(invoice.bestBuyDate)}
             </Text>
           </View>
+          {card.closing_day != null && card.due_day != null && (
+            <View className="flex-row justify-between">
+              <Text className="text-sm text-muted-foreground">Prazo máximo</Text>
+              <Text className="text-sm font-semibold text-foreground" testID="invoice-freedays">
+                até{' '}
+                {interestFreeDays({ closingDay: card.closing_day, dueDay: card.due_day })} dias sem
+                juros
+              </Text>
+            </View>
+          )}
           {limitAvailable != null && (
             <View className="flex-row justify-between">
               <Text className="text-sm text-muted-foreground">Limite restante</Text>

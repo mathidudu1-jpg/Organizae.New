@@ -4,11 +4,13 @@ import {
   addMonthsToMonthRef,
   installmentAmounts,
   installmentSlots,
+  interestFreeDays,
   invoiceForMonth,
   invoiceForPurchase,
   invoiceLabel,
   invoiceStatus,
   openInvoice,
+  suggestedClosingDay,
   validateCycleConfig,
   type CardCycleConfig,
 } from './invoice';
@@ -253,6 +255,27 @@ describe('invoiceStatus', () => {
 
   it('fatura sem compras, após fechar, conta como paga', () => {
     expect(invoiceStatus(inv, '2026-07-26', 0, 0)).toBe('paid');
+  });
+});
+
+describe('padrões brasileiros (prazo sem juros / sugestão de fechamento)', () => {
+  it('fecha 25 / vence 3 → até 39 dias sem juros (janela jul→set)', () => {
+    expect(interestFreeDays(C6)).toBe(39);
+  });
+
+  it('fecha 5 / vence 15 → 40 dias (o clássico "até 40 dias")', () => {
+    expect(interestFreeDays(INV)).toBe(40);
+  });
+
+  it('gap fechamento→vencimento de 7 dias dá até 37 dias', () => {
+    expect(interestFreeDays({ closingDay: 10, dueDay: 17 })).toBe(37);
+  });
+
+  it('sugestão de fechamento = vencimento − 7 (com wrap de mês)', () => {
+    expect(suggestedClosingDay(15)).toBe(8);
+    expect(suggestedClosingDay(10)).toBe(3);
+    expect(suggestedClosingDay(3)).toBe(26); // wrap: 3-7 → mês anterior
+    expect(suggestedClosingDay(20, 10)).toBe(10);
   });
 });
 

@@ -224,6 +224,39 @@ export function installmentSlots(
   });
 }
 
+// ---------- padrões do mercado brasileiro ----------
+
+/**
+ * Dias "sem juros" do marketing dos bancos ("ATÉ N dias"): comprando no
+ * MELHOR dia (dia seguinte ao fechamento), quantos dias até o vencimento?
+ * O valor varia com o mês (fevereiro encurta), então devolvemos o MÁXIMO
+ * do ano — é assim que os bancos anunciam.
+ * Ex: fecha 25 / vence 3 → até 38 dias; fecha 5 / vence 15 → até 40 dias.
+ */
+export function interestFreeDays(config: CardCycleConfig): number {
+  const ms = (iso: string) => {
+    const { y, m, d } = parseISO(iso);
+    return Date.UTC(y, m - 1, d);
+  };
+  let max = 0;
+  for (let m = 1; m <= 12; m++) {
+    const best = invoiceClosingIn({ y: 2026, m }, config).bestBuyDate;
+    const inv = invoiceForPurchase(best, config);
+    max = Math.max(max, Math.round((ms(inv.dueDate) - ms(best)) / 86_400_000));
+  }
+  return max;
+}
+
+/**
+ * Sugestão de dia de fechamento para um vencimento escolhido.
+ * Prática comum no Brasil: fechamento 7–10 dias antes do vencimento
+ * (C6/Nubank/Santander ≈ 7). Wrap em mês genérico de 30 dias.
+ */
+export function suggestedClosingDay(dueDay: number, gapDays = 7): number {
+  const day = dueDay - gapDays;
+  return day >= 1 ? day : day + 30;
+}
+
 /** Valida config de cartão. Retorna mensagem de erro ou null. */
 export function validateCycleConfig(config: CardCycleConfig): string | null {
   const { closingDay, dueDay } = config;

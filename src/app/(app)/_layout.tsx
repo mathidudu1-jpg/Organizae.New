@@ -100,6 +100,7 @@ export default function AppLayout() {
           <Tabs.Screen name="card/[id]" options={{ href: null }} />
           <Tabs.Screen name="bank-new" options={{ href: null }} />
           <Tabs.Screen name="bank/[id]" options={{ href: null }} />
+          <Tabs.Screen name="investments" options={{ href: null }} />
         </Tabs>
       </View>
     </View>

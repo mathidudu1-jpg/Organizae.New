@@ -1,11 +1,19 @@
 import { Link } from 'expo-router';
-import { ChevronRight, CreditCard, Landmark, Plus, Wallet } from 'lucide-react-native';
+import {
+  ChevronRight,
+  CreditCard,
+  Landmark,
+  Plus,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui';
 import { useAccountBalances, useAccounts } from '@/features/finance/hooks/useAccounts';
 import { useCards } from '@/features/finance/hooks/useCards';
+import { useInvestments } from '@/features/invest/hooks/useInvestments';
 import { formatCurrency } from '@/lib/format';
 import { colors } from '@/theme/colors';
 
@@ -23,6 +31,7 @@ export default function Banks() {
   const { data: accounts, isLoading } = useAccounts();
   const { data: cards } = useCards();
   const { balanceOf, total, isLoading: loadingBalances } = useAccountBalances();
+  const invest = useInvestments();
 
   const list = accounts ?? [];
   const orphanCards = (cards ?? []).filter((c) => !c.account_id);
@@ -77,6 +86,36 @@ export default function Banks() {
               {(cards ?? []).length} {(cards ?? []).length === 1 ? 'cartão' : 'cartões'}
             </Text>
           </View>
+
+          {/* Investimentos */}
+          <Link href="/investments" asChild>
+            <Pressable testID="invest-card">
+              <Card className="p-4 mb-5 flex-row items-center gap-3.5 active:bg-muted">
+                <View className="w-12 h-12 rounded-2xl bg-accent items-center justify-center">
+                  <TrendingUp size={20} color={colors.primary} />
+                </View>
+                <View className="flex-1 min-w-0">
+                  <Text className="text-sm font-bold text-foreground">Investimentos</Text>
+                  <Text className="text-[11px] text-muted-foreground mt-0.5">
+                    {invest.data.length === 0
+                      ? 'Simule suas aplicações e veja render'
+                      : `${invest.data.length} ${invest.data.length === 1 ? 'aplicação' : 'aplicações'}`}
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-sm font-bold tabular-nums text-foreground">
+                    {formatCurrency(invest.totalValue)}
+                  </Text>
+                  {invest.totalYield > 0 && (
+                    <Text className="text-[11px] font-semibold text-success">
+                      +{formatCurrency(invest.totalYield)}
+                    </Text>
+                  )}
+                </View>
+                <ChevronRight size={16} color={colors.placeholder} />
+              </Card>
+            </Pressable>
+          </Link>
 
           {isLoading ? (
             <View className="py-16 items-center">

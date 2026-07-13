@@ -71,14 +71,26 @@ export function CreditCardVisual({ card, width = 180, dimmed = false }: CreditCa
           ) : null}
         </View>
 
-        {/* final */}
-        <View className="flex-row items-center justify-between">
-          <Text className="text-xs tracking-[0.25em]" style={{ color: inkSoft }}>
-            •••• {card.last4 ?? '····'}
-          </Text>
-          <Text className="text-[9px] uppercase tracking-[0.18em]" style={{ color: inkSoft }}>
-            {card.kind === 'debit' ? 'débito' : 'crédito'}
-          </Text>
+        {/* rodapé: bandeira (círculos sobrepostos, ref. C6) + final + tipo */}
+        <View className="flex-row items-end justify-between">
+          <View className="flex-row items-center">
+            <View
+              className="w-[22px] h-[22px] rounded-full"
+              style={{ backgroundColor: '#EB001B', opacity: 0.92 }}
+            />
+            <View
+              className="w-[22px] h-[22px] rounded-full -ml-2.5"
+              style={{ backgroundColor: '#F79E1B', opacity: 0.88 }}
+            />
+          </View>
+          <View className="items-end">
+            <Text className="text-xs tracking-[0.25em]" style={{ color: inkSoft }}>
+              •••• {card.last4 ?? '····'}
+            </Text>
+            <Text className="text-[9px] uppercase tracking-[0.18em] mt-0.5" style={{ color: inkSoft }}>
+              {card.kind === 'debit' ? 'débito' : 'crédito'}
+            </Text>
+          </View>
         </View>
       </View>
     </View>

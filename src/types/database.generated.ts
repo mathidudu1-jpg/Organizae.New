@@ -316,6 +316,66 @@ export type Database = {
         }
         Relationships: []
       }
+      investments: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          id: string
+          is_archived: boolean
+          name: string
+          principal: number
+          rate: number
+          rate_kind: Database["public"]["Enums"]["rate_kind"]
+          start_date: string
+          type: Database["public"]["Enums"]["investment_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          name: string
+          principal: number
+          rate: number
+          rate_kind?: Database["public"]["Enums"]["rate_kind"]
+          start_date: string
+          type?: Database["public"]["Enums"]["investment_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          name?: string
+          principal?: number
+          rate?: number
+          rate_kind?: Database["public"]["Enums"]["rate_kind"]
+          start_date?: string
+          type?: Database["public"]["Enums"]["investment_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "investments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_payments: {
         Row: {
           account_id: string | null
@@ -599,6 +659,15 @@ export type Database = {
       card_kind: "credit" | "debit"
       category_kind: "income" | "expense"
       entry_type: "income" | "expense" | "transfer"
+      investment_type:
+        | "cdb"
+        | "tesouro"
+        | "poupanca"
+        | "fundo"
+        | "acoes"
+        | "cripto"
+        | "outro"
+      rate_kind: "cdi_pct" | "fixed_annual"
       task_priority: "low" | "medium" | "high"
       txn_status: "pending" | "cleared"
     }
@@ -742,6 +811,16 @@ export const Constants = {
       card_kind: ["credit", "debit"],
       category_kind: ["income", "expense"],
       entry_type: ["income", "expense", "transfer"],
+      investment_type: [
+        "cdb",
+        "tesouro",
+        "poupanca",
+        "fundo",
+        "acoes",
+        "cripto",
+        "outro",
+      ],
+      rate_kind: ["cdi_pct", "fixed_annual"],
       task_priority: ["low", "medium", "high"],
       txn_status: ["pending", "cleared"],
     },

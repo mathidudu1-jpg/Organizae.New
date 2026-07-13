@@ -297,16 +297,28 @@ export default function BankDetail() {
                 {selectedCard?.kind === 'credit' ? (
                   <InvoicePanel key={selectedCard.id} card={selectedCard} />
                 ) : selectedCard ? (
-                  <Card className="p-5 flex-row items-center gap-3">
-                    <View className="w-10 h-10 rounded-xl bg-accent items-center justify-center">
-                      <Wallet size={17} color={colors.primary} />
+                  <Card className="p-5">
+                    <View className="flex-row items-center gap-3">
+                      <View className="w-10 h-10 rounded-xl bg-accent items-center justify-center">
+                        <Wallet size={17} color={colors.primary} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Saldo do cartão (conta {bank.name})
+                        </Text>
+                        <Text
+                          className={`text-2xl font-bold tabular-nums ${
+                            balanceOf(bank.id) < 0 ? 'text-danger' : 'text-foreground'
+                          }`}
+                          testID="debit-balance"
+                        >
+                          {formatCurrency(balanceOf(bank.id))}
+                        </Text>
+                      </View>
                     </View>
-                    <View className="flex-1">
-                      <Text className="text-sm font-bold text-foreground">Cartão de débito</Text>
-                      <Text className="text-xs text-muted-foreground mt-0.5 leading-4">
-                        Compras no débito saem direto do saldo da conta {bank.name}.
-                      </Text>
-                    </View>
+                    <Text className="text-xs text-muted-foreground mt-3 leading-4">
+                      Compras no débito saem na hora deste saldo — sem fatura, sem surpresa.
+                    </Text>
                   </Card>
                 ) : null}
               </View>

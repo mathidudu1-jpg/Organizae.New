@@ -1,14 +1,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, Input } from '@/components/ui';
 import { CreditCardVisual } from '@/features/finance/components/CreditCardVisual';
 import { useAccounts } from '@/features/finance/hooks/useAccounts';
 import { useCreateCard } from '@/features/finance/hooks/useCards';
-import { validateCycleConfig } from '@/features/finance/lib/invoice';
+import {
+  interestFreeDays,
+  suggestedClosingDay,
+  validateCycleConfig,
+} from '@/features/finance/lib/invoice';
 import { colors } from '@/theme/colors';
 import type { Card as CardRow, CardKind } from '@/types/database';
 
@@ -219,30 +223,83 @@ export default function NewCard() {
           </View>
 
           {isCredit && (
-            <View className="flex-row gap-3 mt-4">
-              <View className="flex-1">
-                <Input
-                  label="Dia de fechamento"
-                  placeholder="25"
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  value={closingRaw}
-                  onChangeText={(v) => setClosingRaw(v.replace(/\D/g, ''))}
-                  testID="card-closing"
-                />
+            <>
+              {/* Vencimento: dias comuns no Brasil */}
+              <View className="mt-4">
+                <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Dia de vencimento
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {[1, 5, 10, 15, 20, 25].map((d) => (
+                    <Chip
+                      key={d}
+                      label={String(d)}
+                      selected={dueRaw === String(d)}
+                      onPress={() => setDueRaw(String(d))}
+                      testID={`due-${d}`}
+                    />
+                  ))}
+                  <View className="w-20 h-10 rounded-full bg-surface border border-border px-3 justify-center">
+                    <TextInput
+                      className="text-foreground text-sm text-center"
+                      placeholder="outro"
+                      placeholderTextColor={colors.placeholder}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      value={[1, 5, 10, 15, 20, 25].includes(Number(dueRaw)) ? '' : dueRaw}
+                      onChangeText={(v) => setDueRaw(v.replace(/\D/g, ''))}
+                      testID="card-due"
+                    />
+                  </View>
+                </View>
               </View>
-              <View className="flex-1">
-                <Input
-                  label="Dia de vencimento"
-                  placeholder="3"
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  value={dueRaw}
-                  onChangeText={(v) => setDueRaw(v.replace(/\D/g, ''))}
-                  testID="card-due"
-                />
+
+              <View className="flex-row gap-3 mt-4 items-end">
+                <View className="flex-1">
+                  <Input
+                    label="Dia de fechamento"
+                    placeholder="25"
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    value={closingRaw}
+                    onChangeText={(v) => setClosingRaw(v.replace(/\D/g, ''))}
+                    testID="card-closing"
+                  />
+                </View>
+                {dueRaw !== '' && (
+                  <Pressable
+                    onPress={() => setClosingRaw(String(suggestedClosingDay(Number(dueRaw))))}
+                    className="h-12 px-4 rounded-2xl bg-accent border border-primary/30 items-center justify-center active:opacity-80"
+                    testID="btn-suggest-closing"
+                  >
+                    <Text className="text-xs font-semibold text-primary">
+                      Sugerir ({suggestedClosingDay(Number(dueRaw))})
+                    </Text>
+                  </Pressable>
+                )}
               </View>
-            </View>
+              <Text className="text-[11px] text-muted-foreground mt-2">
+                No Brasil, a fatura costuma fechar 7–10 dias antes do vencimento (C6, Nubank e
+                Santander usam ~7).
+              </Text>
+
+              {/* Preview do prazo sem juros */}
+              {closingRaw !== '' &&
+                dueRaw !== '' &&
+                validateCycleConfig({ closingDay: Number(closingRaw), dueDay: Number(dueRaw) }) ===
+                  null && (
+                  <View className="mt-3 rounded-xl bg-accent px-3 py-2.5">
+                    <Text className="text-xs text-primary font-semibold" testID="freedays-preview">
+                      Fecha dia {closingRaw}, vence dia {dueRaw} → até{' '}
+                      {interestFreeDays({
+                        closingDay: Number(closingRaw),
+                        dueDay: Number(dueRaw),
+                      })}{' '}
+                      dias sem juros no melhor dia de compra
+                    </Text>
+                  </View>
+                )}
+            </>
           )}
 
           {/* Cor */}
