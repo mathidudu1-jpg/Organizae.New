@@ -131,6 +131,31 @@ export function invoiceLabel(invoice: Invoice, locale = 'pt-BR'): string {
   return `Fatura de ${name}`;
 }
 
+// ---------- status de fatura ----------
+
+export type InvoiceStatus = 'upcoming' | 'open' | 'closed' | 'overdue' | 'paid';
+
+/**
+ * Status DERIVADO de uma fatura:
+ *  · upcoming — o ciclo ainda nem começou (fatura futura)
+ *  · open     — o ciclo contém hoje (acumulando compras)
+ *  · paid     — ciclo encerrado e pagamentos cobrem o total (fatura zerada conta como paga)
+ *  · overdue  — passou do vencimento sem quitar
+ *  · closed   — fechada, aguardando pagamento (entre fechamento e vencimento)
+ */
+export function invoiceStatus(
+  invoice: Invoice,
+  today: string,
+  total: number,
+  paid: number
+): InvoiceStatus {
+  if (today < invoice.cycleStart) return 'upcoming';
+  if (today <= invoice.cycleEnd) return 'open';
+  if (paid >= total - 0.005) return 'paid';
+  if (today > invoice.dueDate) return 'overdue';
+  return 'closed';
+}
+
 // ---------- parcelamento ----------
 
 /** monthRef (YYYY-MM-01) deslocado n meses. */

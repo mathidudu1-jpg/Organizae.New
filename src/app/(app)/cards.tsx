@@ -6,7 +6,6 @@ import {
   ChevronRight,
   CreditCard,
   Plus,
-  Sparkle,
 } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import {
@@ -14,6 +13,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -21,9 +21,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card } from '@/components/ui';
 import { CreditCardVisual } from '@/features/finance/components/CreditCardVisual';
-import { useCardInvoice } from '@/features/finance/hooks/useCardInvoice';
+import {
+  useCardInvoice,
+  useCreateInvoicePayment,
+} from '@/features/finance/hooks/useCardInvoice';
 import { useCards } from '@/features/finance/hooks/useCards';
-import { formatCurrency } from '@/lib/format';
+import { addMonthsToMonthRef } from '@/features/finance/lib/invoice';
+import { formatCurrency, todayISO } from '@/lib/format';
 import { colors } from '@/theme/colors';
 import type { Card as CardRow } from '@/types/database';
 
@@ -40,11 +44,31 @@ function monthName(monthRef: string): string {
   return new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'long' });
 }
 
-/** Detalhes da fatura aberta + transações do ciclo do cartão ativo. */
-function InvoicePanel({ card }: { card: CardRow }) {
-  const { invoice, transactions, total, limitAvailable, isLoading } = useCardInvoice(card);
+const STATUS_UI = {
+  upcoming: { label: 'Futura', cls: 'bg-muted text-muted-foreground' },
+  open: { label: 'Aberta', cls: 'bg-accent text-primary' },
+  closed: { label: 'Fechada', cls: 'bg-warning/15 text-warning' },
+  overdue: { label: 'Vencida', cls: 'bg-danger/10 text-danger' },
+  paid: { label: 'Paga', cls: 'bg-success/10 text-success' },
+} as const;
 
-  if (!invoice) {
+/** Fatura do cartão ativo com navegação entre meses, status e pagamento. */
+function InvoicePanel({ card }: { card: CardRow }) {
+  // offset em meses a partir da fatura aberta (0 = atual)
+  const [offset, setOffset] = useState(0);
+  const [paying, setPaying] = useState(false);
+  const [payRaw, setPayRaw] = useState('');
+  const [payError, setPayError] = useState<string | null>(null);
+
+  const open = useCardInvoice(card); // fatura aberta (referência do offset)
+  const browsedRef = open.invoice
+    ? addMonthsToMonthRef(open.invoice.monthRef, offset)
+    : undefined;
+  const { invoice, status, transactions, total, paid, remaining, limitAvailable, isLoading } =
+    useCardInvoice(card, offset === 0 ? undefined : browsedRef);
+  const createPayment = useCreateInvoicePayment();
+
+  if (!invoice || !status) {
     return (
       <Card className="p-6 items-center">
         <Text className="text-sm text-muted-foreground text-center">
@@ -54,19 +78,87 @@ function InvoicePanel({ card }: { card: CardRow }) {
     );
   }
 
+  const statusUi = STATUS_UI[status];
+
+  const submitPayment = async () => {
+    setPayError(null);
+    const parsed = payRaw.trim()
+      ? Number(payRaw.replace(/\./g, '').replace(',', '.'))
+      : remaining;
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setPayError('Valor inválido.');
+      return;
+    }
+    try {
+      await createPayment.mutateAsync({
+        card_id: card.id,
+        month_ref: invoice.monthRef,
+        amount: Math.round(parsed * 100) / 100,
+        paid_at: todayISO(),
+      });
+      setPaying(false);
+      setPayRaw('');
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : 'Não foi possível registrar.');
+    }
+  };
+
   return (
     <View>
-      {/* Fatura aberta */}
+      {/* Fatura */}
       <Card className="p-5">
-        <View className="flex-row items-center gap-2 mb-1">
-          <Sparkle size={13} color={colors.primary} />
-          <Text className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Fatura aberta · {monthName(invoice.monthRef)}
-          </Text>
+        {/* Navegação de meses + status */}
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center gap-1">
+            <Pressable
+              onPress={() => setOffset((o) => o - 1)}
+              hitSlop={8}
+              className="w-7 h-7 rounded-full items-center justify-center active:bg-muted"
+              testID="invoice-prev"
+            >
+              <ChevronLeft size={15} color={colors.mutedForeground} />
+            </Pressable>
+            <Text
+              className="text-sm font-bold text-foreground capitalize min-w-[110px] text-center"
+              testID="invoice-month"
+            >
+              {monthName(invoice.monthRef)}
+            </Text>
+            <Pressable
+              onPress={() => setOffset((o) => o + 1)}
+              hitSlop={8}
+              className="w-7 h-7 rounded-full items-center justify-center active:bg-muted"
+              testID="invoice-next"
+            >
+              <ChevronRight size={15} color={colors.mutedForeground} />
+            </Pressable>
+            {offset !== 0 && (
+              <Pressable onPress={() => setOffset(0)} hitSlop={8} testID="invoice-today">
+                <Text className="text-[11px] text-primary font-semibold ml-1">atual</Text>
+              </Pressable>
+            )}
+          </View>
+          <View className={`px-2.5 py-1 rounded-full ${statusUi.cls.split(' ')[0]}`}>
+            <Text
+              className={`text-[10px] font-bold uppercase tracking-wide ${statusUi.cls.split(' ')[1]}`}
+              testID="invoice-status"
+            >
+              {statusUi.label}
+            </Text>
+          </View>
         </View>
+
+        <Text className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Total da fatura
+        </Text>
         <Text className="text-3xl font-bold text-foreground" testID="invoice-total">
           {formatCurrency(total)}
         </Text>
+        {paid > 0 && (
+          <Text className="text-xs text-success mt-1" testID="invoice-paid">
+            {formatCurrency(paid)} pago{remaining > 0 ? ` · falta ${formatCurrency(remaining)}` : ''}
+          </Text>
+        )}
 
         <View className="h-px bg-border my-4" />
 
@@ -92,6 +184,47 @@ function InvoicePanel({ card }: { card: CardRow }) {
             </View>
           )}
         </View>
+
+        {/* Pagamento */}
+        {remaining > 0 && status !== 'open' && (
+          <View className="mt-4">
+            {!paying ? (
+              <Button
+                title="Registrar pagamento"
+                size="sm"
+                onPress={() => setPaying(true)}
+                testID="btn-pay"
+              />
+            ) : (
+              <View className="rounded-2xl bg-muted/60 p-3">
+                <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Valor pago (padrão: {formatCurrency(remaining)})
+                </Text>
+                <View className="flex-row gap-2">
+                  <View className="flex-1 h-10 rounded-xl bg-surface border border-border px-3 justify-center">
+                    <TextInput
+                      className="text-foreground text-sm"
+                      placeholder={String(remaining).replace('.', ',')}
+                      placeholderTextColor={colors.placeholder}
+                      keyboardType="decimal-pad"
+                      value={payRaw}
+                      onChangeText={setPayRaw}
+                      testID="pay-amount"
+                    />
+                  </View>
+                  <Button
+                    title="Confirmar"
+                    size="sm"
+                    loading={createPayment.isPending}
+                    onPress={submitPayment}
+                    testID="btn-pay-confirm"
+                  />
+                </View>
+                {payError ? <Text className="text-danger text-xs mt-2">{payError}</Text> : null}
+              </View>
+            )}
+          </View>
+        )}
       </Card>
 
       {/* Transações do ciclo */}
@@ -277,13 +410,13 @@ export default function Cards() {
             /* Desktop: carrossel à esquerda, fatura à direita */
             <View className="flex-row gap-8 px-5">
               <View className="w-[340px]">{carousel}</View>
-              <View className="flex-1">{active && <InvoicePanel card={active} />}</View>
+              <View className="flex-1">{active && <InvoicePanel key={active.id} card={active} />}</View>
             </View>
           ) : (
             /* Mobile: empilhado */
             <View>
               {carousel}
-              <View className="px-5 mt-6">{active && <InvoicePanel card={active} />}</View>
+              <View className="px-5 mt-6">{active && <InvoicePanel key={active.id} card={active} />}</View>
             </View>
           )}
         </View>

@@ -306,6 +306,50 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_payments: {
+        Row: {
+          amount: number
+          card_id: string
+          created_at: string
+          id: string
+          month_ref: string
+          notes: string | null
+          paid_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          card_id: string
+          created_at?: string
+          id?: string
+          month_ref: string
+          notes?: string | null
+          paid_at: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          card_id?: string
+          created_at?: string
+          id?: string
+          month_ref?: string
+          notes?: string | null
+          paid_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

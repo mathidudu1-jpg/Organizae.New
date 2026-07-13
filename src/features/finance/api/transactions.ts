@@ -74,6 +74,19 @@ export async function getTransaction(id: string): Promise<Transaction> {
   return data;
 }
 
+/** Despesas a partir de uma data (para gráficos de gasto mensal). */
+export async function listExpensesSince(fromDate: string): Promise<
+  Pick<Transaction, 'date' | 'amount' | 'month_ref'>[]
+> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('date, amount, month_ref')
+    .eq('type', 'expense')
+    .gte('date', fromDate);
+  if (error) throw error;
+  return data ?? [];
+}
+
 /** Compras de um cartão dentro de um ciclo de fatura (from/to inclusivos). */
 export async function listCardTransactions(
   cardId: string,

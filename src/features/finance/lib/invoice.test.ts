@@ -7,6 +7,7 @@ import {
   invoiceForMonth,
   invoiceForPurchase,
   invoiceLabel,
+  invoiceStatus,
   openInvoice,
   validateCycleConfig,
   type CardCycleConfig,
@@ -217,6 +218,41 @@ describe('installmentSlots — faturas consecutivas garantidas', () => {
     const refs = slots.map((s) => s.invoice.monthRef);
     expect(new Set(refs).size).toBe(3); // três faturas distintas
     expect(refs).toEqual(['2026-03-01', '2026-04-01', '2026-05-01']);
+  });
+});
+
+describe('invoiceStatus', () => {
+  // Fatura de agosto (C6): ciclo 26/06–25/07, vence 03/08.
+  const inv = invoiceForMonth('2026-08-01', C6);
+
+  it('futura antes do ciclo começar', () => {
+    expect(invoiceStatus(inv, '2026-06-25', 0, 0)).toBe('upcoming');
+  });
+
+  it('aberta enquanto o ciclo contém hoje', () => {
+    expect(invoiceStatus(inv, '2026-06-26', 500, 0)).toBe('open');
+    expect(invoiceStatus(inv, '2026-07-13', 500, 0)).toBe('open');
+    expect(invoiceStatus(inv, '2026-07-25', 500, 0)).toBe('open');
+  });
+
+  it('fechada entre o fechamento e o vencimento sem pagamento', () => {
+    expect(invoiceStatus(inv, '2026-07-26', 500, 0)).toBe('closed');
+    expect(invoiceStatus(inv, '2026-08-03', 500, 0)).toBe('closed');
+  });
+
+  it('vencida após o vencimento sem quitar', () => {
+    expect(invoiceStatus(inv, '2026-08-04', 500, 0)).toBe('overdue');
+    expect(invoiceStatus(inv, '2026-08-04', 500, 499.99)).toBe('overdue');
+  });
+
+  it('paga quando pagamentos cobrem o total (tolerância de centavo)', () => {
+    expect(invoiceStatus(inv, '2026-07-26', 500, 500)).toBe('paid');
+    expect(invoiceStatus(inv, '2026-09-01', 500, 500)).toBe('paid');
+    expect(invoiceStatus(inv, '2026-08-04', 500, 499.996)).toBe('paid');
+  });
+
+  it('fatura sem compras, após fechar, conta como paga', () => {
+    expect(invoiceStatus(inv, '2026-07-26', 0, 0)).toBe('paid');
   });
 });
 

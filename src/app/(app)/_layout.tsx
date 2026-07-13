@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
-import { CreditCard, LayoutDashboard, Sparkles } from 'lucide-react-native';
+import { CalendarCheck, CreditCard, LayoutDashboard, Sparkles } from 'lucide-react-native';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -47,6 +47,13 @@ export default function AppLayout() {
         options={{
           title: 'Cartões',
           tabBarIcon: ({ color, size }) => <CreditCard color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="agenda"
+        options={{
+          title: 'Agenda',
+          tabBarIcon: ({ color, size }) => <CalendarCheck color={color} size={size ?? 22} />,
         }}
       />
       <Tabs.Screen

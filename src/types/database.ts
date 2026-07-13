@@ -27,6 +27,7 @@ export type Budget = Tables['budgets']['Row'];
 export type Goal = Tables['goals']['Row'];
 export type Task = Tables['tasks']['Row'];
 export type CalendarEvent = Tables['events']['Row'];
+export type InvoicePayment = Tables['invoice_payments']['Row'];
 
 // Inserts/Updates por tabela — SEMPRE use estes (vêm do schema gerado:
 // colunas com default são opcionais, colunas geradas nem aparecem).

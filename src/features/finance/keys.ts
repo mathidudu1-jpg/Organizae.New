@@ -10,4 +10,7 @@ export const financeKeys = {
   cards: () => ['finance', 'cards'] as const,
   cardInvoice: (cardId: string, from: string, to: string) =>
     ['finance', 'transactions', 'card', cardId, from, to] as const,
+  invoicePayments: (cardId: string, monthRef: string) =>
+    ['finance', 'invoice-payments', cardId, monthRef] as const,
+  invoicePaymentsRoot: ['finance', 'invoice-payments'] as const,
 };
