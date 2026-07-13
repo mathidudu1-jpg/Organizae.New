@@ -5,7 +5,8 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { Button, Chip } from '@/components/ui';
 import { useCards } from '@/features/finance/hooks/useCards';
 import { useCategories } from '@/features/finance/hooks/useCategories';
-import { todayISO } from '@/lib/format';
+import { installmentAmounts } from '@/features/finance/lib/invoice';
+import { formatCurrency, todayISO } from '@/lib/format';
 import { colors } from '@/theme/colors';
 import type { EntryType, Transaction } from '@/types/database';
 
@@ -16,7 +17,11 @@ export interface TransactionFormValues {
   date: string; // YYYY-MM-DD
   category_id: string | null;
   card_id: string | null;
+  /** 1 = à vista; >1 = compra parcelada no cartão. */
+  installments: number;
 }
+
+const INSTALLMENT_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 
 interface TransactionFormProps {
   initial?: Transaction;
@@ -85,8 +90,12 @@ export function TransactionForm({
   const [description, setDescription] = useState(initial?.description ?? '');
   const [categoryId, setCategoryId] = useState<string | null>(initial?.category_id ?? null);
   const [cardId, setCardId] = useState<string | null>(initial?.card_id ?? null);
+  const [installments, setInstallments] = useState(1);
   const [dateBR, setDateBR] = useState(toBR(initial?.date ?? todayISO()));
   const [error, setError] = useState<string | null>(null);
+
+  // Parcelamento só na criação, com cartão e em despesas.
+  const canInstall = !initial && !!cardId && type === 'expense';
 
   const visibleCategories = useMemo(
     () => (categories ?? []).filter((c) => c.kind === type),
@@ -125,11 +134,18 @@ export function TransactionForm({
         date: dateISO,
         category_id: categoryId,
         card_id: type === 'expense' ? cardId : null,
+        installments: canInstall ? installments : 1,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível salvar. Tente de novo.');
     }
   };
+
+  const parsedAmount = parseAmountBR(amountRaw);
+  const installmentPreview =
+    canInstall && installments > 1 && parsedAmount
+      ? installmentAmounts(parsedAmount, installments)
+      : null;
 
   const isExpense = type === 'expense';
 
@@ -249,6 +265,33 @@ export function TransactionForm({
               />
             ))}
           </View>
+        </View>
+      )}
+
+      {/* Parcelas (criação + cartão + despesa) */}
+      {canInstall && (
+        <View className="mt-4">
+          <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Parcelas
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            {INSTALLMENT_OPTIONS.map((n) => (
+              <Chip
+                key={n}
+                label={n === 1 ? 'À vista' : `${n}x`}
+                selected={installments === n}
+                onPress={() => setInstallments(n)}
+              />
+            ))}
+          </View>
+          {installmentPreview && (
+            <Text className="text-[11px] text-muted-foreground mt-2" testID="installment-preview">
+              {installments}x de {formatCurrency(installmentPreview[1] ?? installmentPreview[0])}
+              {installmentPreview[0] !== installmentPreview[1]
+                ? ` · 1ª parcela ${formatCurrency(installmentPreview[0])}`
+                : ''}
+            </Text>
+          )}
         </View>
       )}
 

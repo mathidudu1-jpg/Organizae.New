@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TransactionForm } from '@/features/finance/components/TransactionForm';
 import {
+  useDeleteInstallmentGroup,
   useDeleteTransaction,
   useTransaction,
   useUpdateTransaction,
@@ -19,6 +20,7 @@ export default function EditTransaction() {
   const { data: transaction, isLoading, error } = useTransaction(id);
   const updateTx = useUpdateTransaction();
   const deleteTx = useDeleteTransaction();
+  const deleteGroup = useDeleteInstallmentGroup();
 
   const close = () => {
     if (router.canGoBack()) router.back();
@@ -51,22 +53,50 @@ export default function EditTransaction() {
           ) : error || !transaction ? (
             <Text className="text-danger text-sm">Lançamento não encontrado.</Text>
           ) : (
-            <TransactionForm
-              initial={transaction}
-              submitLabel="Salvar alterações"
-              submitting={updateTx.isPending}
-              onSubmit={async (values) => {
-                await updateTx.mutateAsync({ id: transaction.id, patch: values });
-                close();
-              }}
-              deleting={deleteTx.isPending}
-              onDelete={() => {
-                // Navega já; a exclusão segue em background e a invalidação
-                // atualiza a Home (evita corrida com o refetch do detalhe).
-                close();
-                deleteTx.mutate(transaction.id);
-              }}
-            />
+            <>
+              {transaction.installment_group && (
+                <View className="rounded-2xl bg-accent border border-primary/20 px-4 py-3 mb-5">
+                  <Text className="text-sm font-semibold text-primary">
+                    Parcela {transaction.installment_no} de {transaction.installment_total}
+                  </Text>
+                  <Text className="text-xs text-muted-foreground mt-0.5">
+                    Alterações aqui afetam só esta parcela. Para remover a compra inteira, use
+                    "Excluir todas as parcelas".
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      close();
+                      deleteGroup.mutate(transaction.installment_group!);
+                    }}
+                    className="mt-2.5 self-start"
+                    hitSlop={8}
+                    testID="btn-delete-group"
+                  >
+                    <Text className="text-danger text-xs font-semibold">
+                      Excluir todas as parcelas
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+
+              <TransactionForm
+                initial={transaction}
+                submitLabel="Salvar alterações"
+                submitting={updateTx.isPending}
+                onSubmit={async (values) => {
+                  const { installments: _ignored, ...patch } = values;
+                  await updateTx.mutateAsync({ id: transaction.id, patch });
+                  close();
+                }}
+                deleting={deleteTx.isPending}
+                onDelete={() => {
+                  // Navega já; a exclusão segue em background e a invalidação
+                  // atualiza a Home (evita corrida com o refetch do detalhe).
+                  close();
+                  deleteTx.mutate(transaction.id);
+                }}
+              />
+            </>
           )}
         </View>
       </ScrollView>

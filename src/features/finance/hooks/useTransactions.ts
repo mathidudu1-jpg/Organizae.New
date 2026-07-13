@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+  createInstallmentPurchase,
   createTransaction,
+  deleteInstallmentGroup,
   deleteTransaction,
   getTransaction,
   listTransactions,
   updateTransaction,
+  type InstallmentPurchaseInput,
   type TransactionInsert,
   type TransactionUpdate,
 } from '../api/transactions';
@@ -40,6 +43,26 @@ export function useUpdateTransaction() {
     mutationFn: ({ id, patch }: { id: string; patch: TransactionUpdate }) =>
       updateTransaction(id, patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: financeKeys.all }),
+  });
+}
+
+export function useCreateInstallmentPurchase() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: InstallmentPurchaseInput) => createInstallmentPurchase(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: financeKeys.all }),
+  });
+}
+
+export function useDeleteInstallmentGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (group: string) => deleteInstallmentGroup(group),
+    onSuccess: () => {
+      // Remove qualquer detalhe em cache e invalida as listas.
+      qc.removeQueries({ queryKey: ['finance', 'transaction'] });
+      qc.invalidateQueries({ queryKey: financeKeys.transactionsRoot });
+    },
   });
 }
 

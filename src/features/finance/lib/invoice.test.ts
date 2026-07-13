@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  addMonthsToMonthRef,
+  installmentAmounts,
+  installmentSlots,
   invoiceForMonth,
   invoiceForPurchase,
   invoiceLabel,
@@ -134,6 +137,86 @@ describe('invoiceLabel', () => {
   it('gera "Fatura de agosto"', () => {
     const inv = invoiceForPurchase('2026-07-03', C6);
     expect(invoiceLabel(inv)).toBe('Fatura de agosto');
+  });
+});
+
+describe('installmentAmounts — divisão exata de centavos', () => {
+  it('1159,52 em 12x → 1ª 96,70 + 11× 96,62, somando exato', () => {
+    const parts = installmentAmounts(1159.52, 12);
+    expect(parts[0]).toBe(96.7);
+    expect(parts.slice(1).every((p) => p === 96.62)).toBe(true);
+    expect(Math.round(parts.reduce((s, p) => s + p, 0) * 100)).toBe(115952);
+  });
+
+  it('100 em 3x → [33.34, 33.33, 33.33]', () => {
+    expect(installmentAmounts(100, 3)).toEqual([33.34, 33.33, 33.33]);
+  });
+
+  it('1x devolve o total', () => {
+    expect(installmentAmounts(59.9, 1)).toEqual([59.9]);
+  });
+
+  it('soma sempre exata (varredura)', () => {
+    for (const total of [0.03, 10, 99.99, 1234.56, 7777.77]) {
+      for (const n of [2, 3, 5, 7, 12, 24]) {
+        const parts = installmentAmounts(total, n);
+        expect(parts.length).toBe(n);
+        expect(Math.round(parts.reduce((s, p) => s + p, 0) * 100)).toBe(Math.round(total * 100));
+      }
+    }
+  });
+});
+
+describe('addMonthsToMonthRef', () => {
+  it('avança meses e vira o ano', () => {
+    expect(addMonthsToMonthRef('2026-08-01', 1)).toBe('2026-09-01');
+    expect(addMonthsToMonthRef('2026-11-01', 3)).toBe('2027-02-01');
+  });
+});
+
+describe('installmentSlots — faturas consecutivas garantidas', () => {
+  it('C6: compra 03/07 em 3x → faturas ago/set/out', () => {
+    const slots = installmentSlots('2026-07-03', C6, 3);
+    expect(slots.map((s) => s.invoice.monthRef)).toEqual([
+      '2026-08-01',
+      '2026-09-01',
+      '2026-10-01',
+    ]);
+    expect(slots[0].date).toBe('2026-07-03');
+    expect(slots[1].date).toBe('2026-08-03');
+    expect(slots[2].date).toBe('2026-09-03');
+  });
+
+  it('INVARIANTE: a data de cada parcela deriva a própria fatura alvo', () => {
+    const configs: CardCycleConfig[] = [
+      C6,
+      INV,
+      { closingDay: 30, dueDay: 10 },
+      { closingDay: 31, dueDay: 5 },
+      { closingDay: 1, dueDay: 15 },
+    ];
+    const dates = ['2026-01-31', '2026-01-26', '2026-02-28', '2026-07-25', '2026-12-31'];
+    for (const cfg of configs) {
+      for (const date of dates) {
+        const slots = installmentSlots(date, cfg, 12);
+        slots.forEach((slot, i) => {
+          // fatura alvo = fatura da compra + i meses
+          expect(slot.invoice.monthRef).toBe(
+            addMonthsToMonthRef(invoiceForPurchase(date, cfg).monthRef, i)
+          );
+          // a data registrada pertence ao ciclo dessa fatura (derivação bate)
+          expect(invoiceForPurchase(slot.date, cfg).monthRef).toBe(slot.invoice.monthRef);
+        });
+      }
+    }
+  });
+
+  it('caso patológico: compra 31/01 com fechamento dia 30 NÃO colide parcelas', () => {
+    const cfg: CardCycleConfig = { closingDay: 30, dueDay: 10 };
+    const slots = installmentSlots('2026-01-31', cfg, 3);
+    const refs = slots.map((s) => s.invoice.monthRef);
+    expect(new Set(refs).size).toBe(3); // três faturas distintas
+    expect(refs).toEqual(['2026-03-01', '2026-04-01', '2026-05-01']);
   });
 });
 

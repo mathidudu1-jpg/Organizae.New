@@ -4,13 +4,19 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TransactionForm } from '@/features/finance/components/TransactionForm';
-import { useCreateTransaction } from '@/features/finance/hooks/useTransactions';
+import { useCards } from '@/features/finance/hooks/useCards';
+import {
+  useCreateInstallmentPurchase,
+  useCreateTransaction,
+} from '@/features/finance/hooks/useTransactions';
 import { colors } from '@/theme/colors';
 
 export default function NewTransaction() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { data: cards } = useCards();
   const createTx = useCreateTransaction();
+  const createInstallments = useCreateInstallmentPurchase();
 
   return (
     <View className="flex-1 bg-background">
@@ -32,9 +38,28 @@ export default function NewTransaction() {
           </View>
 
           <TransactionForm
-            submitting={createTx.isPending}
+            submitting={createTx.isPending || createInstallments.isPending}
             onSubmit={async (values) => {
-              await createTx.mutateAsync(values);
+              if (values.installments > 1 && values.card_id) {
+                const card = (cards ?? []).find((c) => c.id === values.card_id);
+                if (!card?.closing_day || !card?.due_day) {
+                  throw new Error(
+                    'Cadastre fechamento e vencimento do cartão para parcelar compras.'
+                  );
+                }
+                await createInstallments.mutateAsync({
+                  amount: values.amount,
+                  description: values.description,
+                  date: values.date,
+                  category_id: values.category_id,
+                  card_id: values.card_id,
+                  cycleConfig: { closingDay: card.closing_day, dueDay: card.due_day },
+                  installments: values.installments,
+                });
+              } else {
+                const { installments: _ignored, ...row } = values;
+                await createTx.mutateAsync(row);
+              }
               router.back();
             }}
           />

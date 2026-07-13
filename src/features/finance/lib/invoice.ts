@@ -131,6 +131,74 @@ export function invoiceLabel(invoice: Invoice, locale = 'pt-BR'): string {
   return `Fatura de ${name}`;
 }
 
+// ---------- parcelamento ----------
+
+/** monthRef (YYYY-MM-01) deslocado n meses. */
+export function addMonthsToMonthRef(monthRef: string, n: number): string {
+  const { y, m } = parseISO(monthRef);
+  const next = addMonths({ y, m }, n);
+  return toISO(next.y, next.m, 1);
+}
+
+/**
+ * Divide um total em N parcelas que somam EXATAMENTE o total.
+ * Base = arredondado pra baixo no centavo; a 1ª parcela absorve a diferença.
+ * Ex: 1159.52 em 12x → [96.70, 96.62 × 11].
+ */
+export function installmentAmounts(total: number, count: number): number[] {
+  if (count < 1) return [];
+  const totalCents = Math.round(total * 100);
+  const baseCents = Math.floor(totalCents / count);
+  const firstCents = totalCents - baseCents * (count - 1);
+  return [firstCents / 100, ...Array.from({ length: count - 1 }, () => baseCents / 100)];
+}
+
+export interface InstallmentSlot {
+  /** Data registrada da parcela (dentro do ciclo da fatura alvo). */
+  date: string;
+  /** Fatura em que a parcela cai (mês do vencimento). */
+  invoice: Invoice;
+}
+
+/**
+ * Datas das N parcelas de uma compra no cartão, GARANTINDO faturas
+ * consecutivas (monthRef da compra + k−1 meses), mesmo nos edges de clamp
+ * (ex: compra 31/01 com fechamento dia 30 → fevereiro curto).
+ * Estratégia: desloca a data k−1 meses e, se ela escapar do ciclo da
+ * fatura alvo, prende ao início/fim do ciclo.
+ */
+export function installmentSlots(
+  purchaseDate: string,
+  config: CardCycleConfig,
+  count: number
+): InstallmentSlot[] {
+  const first = invoiceForPurchase(purchaseDate, config);
+  const { d: purchaseDay } = parseISO(purchaseDate);
+
+  return Array.from({ length: count }, (_, i) => {
+    if (i === 0) return { date: purchaseDate, invoice: first };
+
+    const invoice = invoiceForMonth(addMonthsToMonthRef(first.monthRef, i), config);
+    // dia "intuitivo": mesmo dia da compra, no mês do fim do ciclo alvo
+    // (ex: ciclo 26/07–25/08 e compra dia 3 → 03/08); se não couber,
+    // tenta no mês do início (compra dia 30 → 30/07); senão prende ao ciclo.
+    const end = parseISO(invoice.cycleEnd);
+    const start = parseISO(invoice.cycleStart);
+    const inEndMonth = toISO(end.y, end.m, clampDay(end.y, end.m, purchaseDay));
+    const inStartMonth = toISO(start.y, start.m, clampDay(start.y, start.m, purchaseDay));
+
+    let date: string;
+    if (inEndMonth >= invoice.cycleStart && inEndMonth <= invoice.cycleEnd) {
+      date = inEndMonth;
+    } else if (inStartMonth >= invoice.cycleStart && inStartMonth <= invoice.cycleEnd) {
+      date = inStartMonth;
+    } else {
+      date = inStartMonth < invoice.cycleStart ? invoice.cycleStart : invoice.cycleEnd;
+    }
+    return { date, invoice };
+  });
+}
+
 /** Valida config de cartão. Retorna mensagem de erro ou null. */
 export function validateCycleConfig(config: CardCycleConfig): string | null {
   const { closingDay, dueDay } = config;

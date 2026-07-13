@@ -177,6 +177,9 @@ export default function Home() {
                             </Text>
                             <Text className="text-[11px] text-muted-foreground mt-0.5">
                               {categoryName(t.category_id)} · {toBRShort(t.date)}
+                              {t.installment_total
+                                ? ` · ${t.installment_no}/${t.installment_total}`
+                                : ''}
                             </Text>
                           </View>
                           <Text
