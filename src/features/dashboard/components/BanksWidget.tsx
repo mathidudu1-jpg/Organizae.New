@@ -85,7 +85,7 @@ export function BanksWidget() {
                 <ChevronLeft size={16} color={colors.mutedForeground} />
               </Pressable>
             )}
-            <Pressable onPress={() => router.push('/cards')}>
+            <Pressable onPress={() => router.push('/banks')}>
               <CreditCardVisual card={active} width={168} />
             </Pressable>
             {list.length > 1 && (

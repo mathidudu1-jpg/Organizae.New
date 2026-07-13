@@ -1,7 +1,7 @@
 import { Link, usePathname } from 'expo-router';
 import {
   CalendarCheck,
-  CreditCard,
+  Landmark,
   LayoutDashboard,
   LogOut,
   Sparkles,
@@ -13,7 +13,7 @@ import { colors } from '@/theme/colors';
 
 const NAV = [
   { href: '/', icon: LayoutDashboard, label: 'Home' },
-  { href: '/cards', icon: CreditCard, label: 'Cartões' },
+  { href: '/banks', icon: Landmark, label: 'Bancos' },
   { href: '/agenda', icon: CalendarCheck, label: 'Agenda' },
   { href: '/iza', icon: Sparkles, label: 'Iza' },
 ] as const;

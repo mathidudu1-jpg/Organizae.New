@@ -77,7 +77,7 @@ export function CreditCardVisual({ card, width = 180, dimmed = false }: CreditCa
             •••• {card.last4 ?? '····'}
           </Text>
           <Text className="text-[9px] uppercase tracking-[0.18em]" style={{ color: inkSoft }}>
-            crédito
+            {card.kind === 'debit' ? 'débito' : 'crédito'}
           </Text>
         </View>
       </View>

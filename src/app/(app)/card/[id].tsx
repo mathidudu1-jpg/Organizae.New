@@ -1,16 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, X } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Archive, Check, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, Input } from '@/components/ui';
 import { CreditCardVisual } from '@/features/finance/components/CreditCardVisual';
 import { useAccounts } from '@/features/finance/hooks/useAccounts';
-import { useCreateCard } from '@/features/finance/hooks/useCards';
+import { useArchiveCard, useCards, useUpdateCard } from '@/features/finance/hooks/useCards';
 import { validateCycleConfig } from '@/features/finance/lib/invoice';
 import { colors } from '@/theme/colors';
-import type { Card as CardRow, CardKind } from '@/types/database';
 
 const CARD_COLORS = ['#14181F', '#0B8A63', '#1D4ED8', '#7C3AED', '#BE123C', '#B45309', '#FFFFFF'];
 
@@ -24,47 +23,69 @@ function parseAmountBR(raw: string): number | null {
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
 }
 
-export default function NewCard() {
+export default function EditCard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { bank } = useLocalSearchParams<{ bank?: string }>();
-  const { data: accounts } = useAccounts();
-  const createCard = useCreateCard();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [kind, setKind] = useState<CardKind>('credit');
-  const [accountId, setAccountId] = useState<string | null>(bank ?? null);
+  const { data: cards, isLoading } = useCards();
+  const { data: accounts } = useAccounts();
+  const updateCard = useUpdateCard();
+  const archiveCard = useArchiveCard();
+
+  const card = (cards ?? []).find((c) => c.id === id);
+
   const [name, setName] = useState('');
   const [last4, setLast4] = useState('');
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [limitRaw, setLimitRaw] = useState('');
   const [closingRaw, setClosingRaw] = useState('');
   const [dueRaw, setDueRaw] = useState('');
   const [color, setColor] = useState(CARD_COLORS[0]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
-  const isCredit = kind === 'credit';
+  useEffect(() => {
+    if (card && !loaded) {
+      setName(card.name);
+      setLast4(card.last4 ?? '');
+      setAccountId(card.account_id);
+      setLimitRaw(card.credit_limit != null ? String(card.credit_limit).replace('.', ',') : '');
+      setClosingRaw(card.closing_day != null ? String(card.closing_day) : '');
+      setDueRaw(card.due_day != null ? String(card.due_day) : '');
+      setColor(card.color ?? CARD_COLORS[0]);
+      setLoaded(true);
+    }
+  }, [card, loaded]);
 
-  const preview = {
-    id: 'preview',
-    user_id: '',
-    account_id: accountId,
-    name: name || 'Meu cartão',
-    brand: null,
-    last4: last4 || null,
-    credit_limit: null,
-    closing_day: null,
-    due_day: null,
-    color,
-    kind,
-    is_archived: false,
-    created_at: '',
-    updated_at: '',
-  } satisfies CardRow;
+  const close = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/banks');
+  };
+
+  if (isLoading || (card && !loaded)) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (!card) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center px-8">
+        <Text className="text-sm text-muted-foreground">Cartão não encontrado.</Text>
+        <Button title="Voltar" variant="outline" onPress={close} className="mt-4" />
+      </View>
+    );
+  }
+
+  const isCredit = card.kind === 'credit';
 
   const handleSave = async () => {
     setError(null);
-
     if (name.trim().length < 2) {
-      setError('Dê um nome ao cartão (ex: C6 Múltiplo).');
+      setError('Nome muito curto.');
       return;
     }
     if (last4 && !/^\d{4}$/.test(last4)) {
@@ -73,8 +94,8 @@ export default function NewCard() {
     }
 
     let credit_limit: number | null = null;
-    let closing_day: number | null = null;
-    let due_day: number | null = null;
+    let closing_day: number | null = card.closing_day;
+    let due_day: number | null = card.due_day;
 
     if (isCredit) {
       const closingDay = Number(closingRaw);
@@ -94,26 +115,30 @@ export default function NewCard() {
         }
       }
     } else if (!accountId) {
-      setError('Cartão de débito precisa de um banco (é de onde sai o dinheiro).');
+      setError('Cartão de débito precisa de um banco.');
       return;
     }
 
     try {
-      await createCard.mutateAsync({
-        name: name.trim(),
-        kind,
-        account_id: accountId,
-        last4: last4 || null,
-        credit_limit,
-        closing_day,
-        due_day,
-        color,
+      await updateCard.mutateAsync({
+        id: card.id,
+        patch: {
+          name: name.trim(),
+          last4: last4 || null,
+          account_id: accountId,
+          credit_limit,
+          closing_day,
+          due_day,
+          color,
+        },
       });
-      router.back();
+      close();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível salvar.');
     }
   };
+
+  const preview = { ...card, name: name || card.name, last4: last4 || null, color };
 
   return (
     <View className="flex-1 bg-background">
@@ -124,9 +149,14 @@ export default function NewCard() {
       >
         <View className="w-full max-w-[480px] mx-auto">
           <View className="flex-row items-center justify-between mb-6">
-            <Text className="text-xl font-bold text-foreground">Novo cartão</Text>
+            <View>
+              <Text className="text-xl font-bold text-foreground">Editar cartão</Text>
+              <Text className="text-xs text-muted-foreground mt-0.5">
+                {isCredit ? 'Crédito' : 'Débito'} — o tipo não muda depois de criado.
+              </Text>
+            </View>
             <Pressable
-              onPress={() => router.back()}
+              onPress={close}
               className="w-9 h-9 rounded-full bg-muted items-center justify-center active:opacity-80"
               hitSlop={8}
             >
@@ -134,69 +164,39 @@ export default function NewCard() {
             </Pressable>
           </View>
 
-          {/* Preview */}
           <View className="items-center mb-6">
             <CreditCardVisual card={preview} width={150} />
           </View>
 
-          {/* Tipo */}
+          {/* Banco */}
           <View className="mb-4">
             <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Tipo
+              Banco
             </Text>
-            <View className="flex-row gap-2">
+            <View className="flex-row flex-wrap gap-2">
               <Chip
-                label="Crédito"
-                selected={isCredit}
-                onPress={() => setKind('credit')}
-                testID="kind-credit"
+                label="Sem banco"
+                selected={accountId === null}
+                onPress={() => setAccountId(null)}
               />
-              <Chip
-                label="Débito"
-                selected={!isCredit}
-                onPress={() => setKind('debit')}
-                testID="kind-debit"
-              />
+              {(accounts ?? []).map((a) => (
+                <Chip
+                  key={a.id}
+                  label={a.name}
+                  selected={accountId === a.id}
+                  onPress={() => setAccountId(a.id)}
+                  testID={`bank-chip-${a.id}`}
+                />
+              ))}
             </View>
           </View>
 
-          {/* Banco */}
-          {(accounts ?? []).length > 0 && (
-            <View className="mb-4">
-              <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                Banco
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                <Chip
-                  label="Sem banco"
-                  selected={accountId === null}
-                  onPress={() => setAccountId(null)}
-                />
-                {(accounts ?? []).map((a) => (
-                  <Chip
-                    key={a.id}
-                    label={a.name}
-                    selected={accountId === a.id}
-                    onPress={() => setAccountId(a.id)}
-                  />
-                ))}
-              </View>
-            </View>
-          )}
-
-          <Input
-            label="Nome"
-            placeholder="Ex: C6 Múltiplo"
-            value={name}
-            onChangeText={setName}
-            testID="card-name"
-          />
+          <Input label="Nome" value={name} onChangeText={setName} testID="card-name" />
 
           <View className="flex-row gap-3 mt-4">
             <View className="flex-1">
               <Input
                 label="Final (4 dígitos)"
-                placeholder="9048"
                 keyboardType="number-pad"
                 maxLength={4}
                 value={last4}
@@ -208,7 +208,6 @@ export default function NewCard() {
               <View className="flex-1">
                 <Input
                   label="Limite (R$)"
-                  placeholder="5.000,00"
                   keyboardType="decimal-pad"
                   value={limitRaw}
                   onChangeText={setLimitRaw}
@@ -223,7 +222,6 @@ export default function NewCard() {
               <View className="flex-1">
                 <Input
                   label="Dia de fechamento"
-                  placeholder="25"
                   keyboardType="number-pad"
                   maxLength={2}
                   value={closingRaw}
@@ -234,7 +232,6 @@ export default function NewCard() {
               <View className="flex-1">
                 <Input
                   label="Dia de vencimento"
-                  placeholder="3"
                   keyboardType="number-pad"
                   maxLength={2}
                   value={dueRaw}
@@ -267,12 +264,23 @@ export default function NewCard() {
           {error ? <Text className="text-danger text-xs mt-4">{error}</Text> : null}
 
           <Button
-            title="Salvar cartão"
+            title="Salvar alterações"
             onPress={handleSave}
-            loading={createCard.isPending}
+            loading={updateCard.isPending}
             icon={<Check color={colors.primaryForeground} size={18} />}
             className="mt-8"
             testID="btn-save-card"
+          />
+          <Button
+            title="Arquivar cartão"
+            variant="danger"
+            icon={<Archive color={colors.danger} size={15} />}
+            onPress={() => {
+              close();
+              archiveCard.mutate(card.id);
+            }}
+            className="mt-3"
+            testID="btn-archive-card"
           />
         </View>
       </ScrollView>

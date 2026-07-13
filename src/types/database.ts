@@ -12,6 +12,7 @@ type Enums = Database['public']['Enums'];
 
 // Enums
 export type AccountType = Enums['account_type'];
+export type CardKind = Enums['card_kind'];
 export type EntryType = Enums['entry_type'];
 export type CategoryKind = Enums['category_kind'];
 export type TxnStatus = Enums['txn_status'];
@@ -28,6 +29,7 @@ export type Goal = Tables['goals']['Row'];
 export type Task = Tables['tasks']['Row'];
 export type CalendarEvent = Tables['events']['Row'];
 export type InvoicePayment = Tables['invoice_payments']['Row'];
+export type AccountBalance = Database['public']['Views']['account_balances']['Row'];
 
 // Inserts/Updates por tabela — SEMPRE use estes (vêm do schema gerado:
 // colunas com default são opcionais, colunas geradas nem aparecem).

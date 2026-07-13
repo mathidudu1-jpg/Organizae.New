@@ -6,6 +6,7 @@ export const financeKeys = {
   transactions: (monthRef?: string) => ['finance', 'transactions', monthRef ?? 'all'] as const,
   transaction: (id: string) => ['finance', 'transaction', id] as const,
   accounts: () => ['finance', 'accounts'] as const,
+  accountBalances: () => ['finance', 'account-balances'] as const,
   categories: () => ['finance', 'categories'] as const,
   cards: () => ['finance', 'cards'] as const,
   cardInvoice: (cardId: string, from: string, to: string) =>

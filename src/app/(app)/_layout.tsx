@@ -1,5 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
-import { CalendarCheck, CreditCard, LayoutDashboard, Sparkles } from 'lucide-react-native';
+import { CalendarCheck, Landmark, LayoutDashboard, Sparkles } from 'lucide-react-native';
 import { ActivityIndicator, View, useWindowDimensions } from 'react-native';
 
 import { Sidebar } from '@/components/app/Sidebar';
@@ -73,10 +73,10 @@ export default function AppLayout() {
             }}
           />
           <Tabs.Screen
-            name="cards"
+            name="banks"
             options={{
-              title: 'Cartões',
-              tabBarIcon: ({ color, size }) => <CreditCard color={color} size={size ?? 22} />,
+              title: 'Bancos',
+              tabBarIcon: ({ color, size }) => <Landmark color={color} size={size ?? 22} />,
             }}
           />
           <Tabs.Screen
@@ -93,10 +93,13 @@ export default function AppLayout() {
               tabBarIcon: ({ color, size }) => <Sparkles color={color} size={size ?? 22} />,
             }}
           />
-          {/* Fora da tab bar: telas de formulário */}
+          {/* Fora da tab bar: telas de formulário e detalhe */}
           <Tabs.Screen name="new" options={{ href: null }} />
           <Tabs.Screen name="transaction/[id]" options={{ href: null }} />
           <Tabs.Screen name="card-new" options={{ href: null }} />
+          <Tabs.Screen name="card/[id]" options={{ href: null }} />
+          <Tabs.Screen name="bank-new" options={{ href: null }} />
+          <Tabs.Screen name="bank/[id]" options={{ href: null }} />
         </Tabs>
       </View>
     </View>

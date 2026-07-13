@@ -130,6 +130,7 @@ export type Database = {
           due_day: number | null
           id: string
           is_archived: boolean
+          kind: Database["public"]["Enums"]["card_kind"]
           last4: string | null
           name: string
           updated_at: string
@@ -145,6 +146,7 @@ export type Database = {
           due_day?: number | null
           id?: string
           is_archived?: boolean
+          kind?: Database["public"]["Enums"]["card_kind"]
           last4?: string | null
           name: string
           updated_at?: string
@@ -160,12 +162,20 @@ export type Database = {
           due_day?: number | null
           id?: string
           is_archived?: boolean
+          kind?: Database["public"]["Enums"]["card_kind"]
           last4?: string | null
           name?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cards_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "cards_account_id_fkey"
             columns: ["account_id"]
@@ -308,6 +318,7 @@ export type Database = {
       }
       invoice_payments: {
         Row: {
+          account_id: string | null
           amount: number
           card_id: string
           created_at: string
@@ -319,6 +330,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_id?: string | null
           amount: number
           card_id: string
           created_at?: string
@@ -330,6 +342,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          account_id?: string | null
           amount?: number
           card_id?: string
           created_at?: string
@@ -341,6 +354,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invoice_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "invoice_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoice_payments_card_id_fkey"
             columns: ["card_id"]
@@ -497,6 +524,13 @@ export type Database = {
             foreignKeyName: "transactions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
@@ -518,6 +552,13 @@ export type Database = {
             foreignKeyName: "transactions_transfer_account_id_fkey"
             columns: ["transfer_account_id"]
             isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transactions_transfer_account_id_fkey"
+            columns: ["transfer_account_id"]
+            isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
@@ -525,7 +566,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      account_balances: {
+        Row: {
+          account_id: string | null
+          balance: number | null
+          user_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          balance?: never
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          balance?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
@@ -538,6 +596,7 @@ export type Database = {
         | "cash"
         | "investment"
         | "other"
+      card_kind: "credit" | "debit"
       category_kind: "income" | "expense"
       entry_type: "income" | "expense" | "transfer"
       task_priority: "low" | "medium" | "high"
@@ -680,6 +739,7 @@ export const Constants = {
         "investment",
         "other",
       ],
+      card_kind: ["credit", "debit"],
       category_kind: ["income", "expense"],
       entry_type: ["income", "expense", "transfer"],
       task_priority: ["low", "medium", "high"],

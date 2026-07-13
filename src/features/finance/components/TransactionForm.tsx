@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Button, Chip } from '@/components/ui';
+import { useAccounts } from '@/features/finance/hooks/useAccounts';
 import { useCards } from '@/features/finance/hooks/useCards';
 import { useCategories } from '@/features/finance/hooks/useCategories';
 import { installmentAmounts } from '@/features/finance/lib/invoice';
@@ -17,7 +18,9 @@ export interface TransactionFormValues {
   date: string; // YYYY-MM-DD
   category_id: string | null;
   card_id: string | null;
-  /** 1 = à vista; >1 = compra parcelada no cartão. */
+  /** Conta bancária (débito direto / recebimento). */
+  account_id: string | null;
+  /** 1 = à vista; >1 = compra parcelada no cartão de crédito. */
   installments: number;
 }
 
@@ -82,6 +85,7 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const { data: categories } = useCategories();
   const { data: cards } = useCards();
+  const { data: accounts } = useAccounts();
 
   const [type, setType] = useState<Exclude<EntryType, 'transfer'>>(
     initial?.type === 'income' ? 'income' : 'expense'
@@ -90,12 +94,15 @@ export function TransactionForm({
   const [description, setDescription] = useState(initial?.description ?? '');
   const [categoryId, setCategoryId] = useState<string | null>(initial?.category_id ?? null);
   const [cardId, setCardId] = useState<string | null>(initial?.card_id ?? null);
+  const [accountId, setAccountId] = useState<string | null>(initial?.account_id ?? null);
   const [installments, setInstallments] = useState(1);
   const [dateBR, setDateBR] = useState(toBR(initial?.date ?? todayISO()));
   const [error, setError] = useState<string | null>(null);
 
-  // Parcelamento só na criação, com cartão e em despesas.
-  const canInstall = !initial && !!cardId && type === 'expense';
+  const selectedCard = (cards ?? []).find((c) => c.id === cardId);
+  // Parcelamento só na criação, em despesas, com cartão de CRÉDITO.
+  const canInstall =
+    !initial && !!cardId && type === 'expense' && selectedCard?.kind !== 'debit';
 
   const visibleCategories = useMemo(
     () => (categories ?? []).filter((c) => c.kind === type),
@@ -134,6 +141,8 @@ export function TransactionForm({
         date: dateISO,
         category_id: categoryId,
         card_id: type === 'expense' ? cardId : null,
+        // Cartão selecionado? A conta vem do cartão (débito) ou de ninguém (crédito).
+        account_id: type === 'expense' && cardId ? null : accountId,
         installments: canInstall ? installments : 1,
       });
     } catch (e) {
@@ -248,23 +257,52 @@ export function TransactionForm({
         </View>
       </View>
 
-      {/* Pagamento (só despesas com cartões cadastrados) */}
-      {isExpense && (cards ?? []).length > 0 && (
+      {/* Pagamento (despesa) / Receber em (entrada) */}
+      {((accounts ?? []).length > 0 || (isExpense && (cards ?? []).length > 0)) && (
         <View className="mt-4">
           <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            Pagamento
+            {isExpense ? 'Pagamento' : 'Receber em'}
           </Text>
           <View className="flex-row flex-wrap gap-2">
-            <Chip label="Conta" selected={cardId === null} onPress={() => setCardId(null)} />
-            {(cards ?? []).map((c) => (
+            <Chip
+              label="Dinheiro"
+              selected={cardId === null && accountId === null}
+              onPress={() => {
+                setCardId(null);
+                setAccountId(null);
+              }}
+            />
+            {(accounts ?? []).map((a) => (
               <Chip
-                key={c.id}
-                label={c.last4 ? `${c.name} · ${c.last4}` : c.name}
-                selected={cardId === c.id}
-                onPress={() => setCardId(c.id)}
+                key={a.id}
+                label={a.name}
+                selected={cardId === null && accountId === a.id}
+                onPress={() => {
+                  setCardId(null);
+                  setAccountId(a.id);
+                }}
+                testID={`pay-account-${a.id}`}
               />
             ))}
+            {isExpense &&
+              (cards ?? []).map((c) => (
+                <Chip
+                  key={c.id}
+                  label={`${c.last4 ? `${c.name} · ${c.last4}` : c.name}${c.kind === 'debit' ? ' (déb.)' : ''}`}
+                  selected={cardId === c.id}
+                  onPress={() => {
+                    setCardId(c.id);
+                    setAccountId(null);
+                  }}
+                  testID={`pay-card-${c.id}`}
+                />
+              ))}
           </View>
+          {isExpense && selectedCard?.kind === 'debit' && (
+            <Text className="text-[11px] text-muted-foreground mt-2">
+              Débito: sai na hora do saldo da conta do cartão.
+            </Text>
+          )}
         </View>
       )}
 

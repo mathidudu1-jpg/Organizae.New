@@ -59,9 +59,10 @@ export function useDeleteInstallmentGroup() {
   return useMutation({
     mutationFn: (group: string) => deleteInstallmentGroup(group),
     onSuccess: () => {
-      // Remove qualquer detalhe em cache e invalida as listas.
+      // Remove qualquer detalhe em cache e invalida listas + saldos.
       qc.removeQueries({ queryKey: ['finance', 'transaction'] });
       qc.invalidateQueries({ queryKey: financeKeys.transactionsRoot });
+      qc.invalidateQueries({ queryKey: financeKeys.accountBalances() });
     },
   });
 }
@@ -72,9 +73,10 @@ export function useDeleteTransaction() {
     mutationFn: (id: string) => deleteTransaction(id),
     onSuccess: (_data, id) => {
       // A linha não existe mais: remover do cache (refetch daria erro),
-      // e só então invalidar as listas.
+      // e só então invalidar listas + saldos.
       qc.removeQueries({ queryKey: financeKeys.transaction(id) });
       qc.invalidateQueries({ queryKey: financeKeys.transactionsRoot });
+      qc.invalidateQueries({ queryKey: financeKeys.accountBalances() });
     },
   });
 }

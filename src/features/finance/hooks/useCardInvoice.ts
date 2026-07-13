@@ -106,6 +106,10 @@ export function useCreateInvoicePayment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: InvoicePaymentInsert) => createInvoicePayment(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: financeKeys.invoicePaymentsRoot }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: financeKeys.invoicePaymentsRoot });
+      // Pagar fatura debitando uma conta muda o saldo dela.
+      qc.invalidateQueries({ queryKey: financeKeys.accountBalances() });
+    },
   });
 }
