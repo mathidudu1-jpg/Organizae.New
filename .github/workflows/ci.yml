@@ -15,5 +15,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # expo-env.d.ts é gerado pelo Expo em dev (gitignored); o typecheck
+      # precisa da referência a expo/types (declara módulos .css etc).
+      - run: printf '/// <reference types="expo/types" />\n' > expo-env.d.ts
       - run: npx tsc --noEmit
       - run: npx vitest run
