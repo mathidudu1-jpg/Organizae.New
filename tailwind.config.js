@@ -25,6 +25,27 @@ module.exports = {
         card: '20px',
         pill: '999px',
       },
+      keyframes: {
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(10px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'scale-in': {
+          from: { opacity: '0', transform: 'scale(0.96)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        // Regra geral de motion do app (entradas suaves estilo Apple)
+        screen: 'fade-up 320ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        item: 'fade-up 380ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'scale-in': 'scale-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'fade-in': 'fade-in 240ms ease-out both',
+      },
     },
   },
   plugins: [],

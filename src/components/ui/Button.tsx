@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text, type PressableProps } from 'react-native';
+import { ActivityIndicator, Text, type PressableProps } from 'react-native';
 
 import { colors } from '@/theme/colors';
+
+import { PressableScale } from './motion';
 
 type Variant = 'primary' | 'outline' | 'ghost' | 'danger';
 type Size = 'md' | 'sm';
@@ -16,10 +18,10 @@ interface ButtonProps extends Omit<PressableProps, 'children'> {
 }
 
 const container: Record<Variant, string> = {
-  primary: 'bg-primary active:opacity-90',
-  outline: 'bg-surface border border-border active:bg-muted',
-  ghost: 'bg-transparent active:bg-muted',
-  danger: 'bg-danger/10 border border-danger/30 active:opacity-80',
+  primary: 'bg-primary hover:brightness-110 hover:shadow-lg hover:shadow-primary/25',
+  outline: 'bg-surface border border-border hover:bg-muted hover:shadow-md',
+  ghost: 'bg-transparent hover:bg-muted',
+  danger: 'bg-danger/10 border border-danger/30 hover:bg-danger/15',
 };
 
 const label: Record<Variant, string> = {
@@ -46,9 +48,10 @@ export function Button({
 }: ButtonProps) {
   const spinnerColor = variant === 'primary' ? colors.primaryForeground : colors.primary;
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       disabled={disabled || loading}
+      scaleTo={0.97}
       className={`flex-row items-center justify-center gap-2 ${container[variant]} ${sizes[size].box} ${
         disabled ? 'opacity-50' : ''
       } ${className}`}
@@ -62,6 +65,6 @@ export function Button({
           <Text className={`font-semibold ${label[variant]} ${sizes[size].text}`}>{title}</Text>
         </>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }

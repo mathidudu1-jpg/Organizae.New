@@ -17,10 +17,11 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, Chip } from '@/components/ui';
+import { Card, Chip, Enter, Screen } from '@/components/ui';
 import {
   useCreateEvent,
   useDeleteEvent,
@@ -522,6 +523,8 @@ function EventsSection() {
 
 export default function Agenda() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
   const [tab, setTab] = useState<Tab>('tasks');
   const { data: tasks } = useTasks();
   const { data: events } = useUpcomingEvents();
@@ -533,45 +536,66 @@ export default function Agenda() {
     (tasks ?? []).filter((t) => !t.is_completed && t.due_date === today).length;
 
   return (
-    <View className="flex-1 bg-background">
+    <Screen className="bg-background">
       <ScrollView
-        contentContainerClassName="px-5 pb-10"
+        contentContainerClassName="px-5 pb-10 lg:px-8"
         style={{ paddingTop: insets.top + 12 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="w-full max-w-[720px] mx-auto">
+        <View className={`w-full mx-auto ${isDesktop ? 'max-w-[1120px]' : 'max-w-[720px]'}`}>
           {/* Header + stats */}
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-xl font-bold text-foreground">Agenda</Text>
-            <View className="flex-row gap-2">
-              <View className="px-3 py-1.5 rounded-full bg-surface border border-border">
-                <Text className="text-[11px] font-semibold text-muted-foreground" testID="stat-pending">
-                  {pendingCount} pendente{pendingCount === 1 ? '' : 's'}
-                </Text>
-              </View>
-              <View className="px-3 py-1.5 rounded-full bg-accent">
-                <Text className="text-[11px] font-semibold text-primary" testID="stat-today">
-                  {todayCount} hoje
-                </Text>
+          <Enter index={0}>
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-xl font-bold text-foreground">Agenda</Text>
+              <View className="flex-row gap-2">
+                <View className="px-3 py-1.5 rounded-full bg-surface border border-border">
+                  <Text className="text-[11px] font-semibold text-muted-foreground" testID="stat-pending">
+                    {pendingCount} pendente{pendingCount === 1 ? '' : 's'}
+                  </Text>
+                </View>
+                <View className="px-3 py-1.5 rounded-full bg-accent">
+                  <Text className="text-[11px] font-semibold text-primary" testID="stat-today">
+                    {todayCount} hoje
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
+          </Enter>
 
-          {/* Alternador */}
-          <View className="flex-row gap-2 mb-4">
-            <Chip label="Tarefas" selected={tab === 'tasks'} onPress={() => setTab('tasks')} testID="tab-tasks" />
-            <Chip
-              label="Compromissos"
-              selected={tab === 'events'}
-              onPress={() => setTab('events')}
-              testID="tab-events"
-            />
-          </View>
-
-          {tab === 'tasks' ? <TasksSection /> : <EventsSection />}
+          {isDesktop ? (
+            /* Desktop: as duas colunas convivem — largura bem aproveitada */
+            <View className="flex-row gap-6">
+              <Enter index={1} className="flex-1">
+                <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                  Tarefas
+                </Text>
+                <TasksSection />
+              </Enter>
+              <Enter index={2} className="flex-1">
+                <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                  Compromissos
+                </Text>
+                <EventsSection />
+              </Enter>
+            </View>
+          ) : (
+            <>
+              {/* Mobile: alternador */}
+              <View className="flex-row gap-2 mb-4">
+                <Chip label="Tarefas" selected={tab === 'tasks'} onPress={() => setTab('tasks')} testID="tab-tasks" />
+                <Chip
+                  label="Compromissos"
+                  selected={tab === 'events'}
+                  onPress={() => setTab('events')}
+                  testID="tab-events"
+                />
+              </View>
+              <Enter index={1}>{tab === 'tasks' ? <TasksSection /> : <EventsSection />}</Enter>
+            </>
+          )}
         </View>
       </ScrollView>
-    </View>
+    </Screen>
   );
 }

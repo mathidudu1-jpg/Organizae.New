@@ -33,7 +33,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, Chip } from '@/components/ui';
+import { Card, Chip, Screen } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { AppointmentsCard } from '@/features/dashboard/components/AppointmentsCard';
 import { BanksWidget } from '@/features/dashboard/components/BanksWidget';
@@ -511,7 +511,7 @@ export default function Home() {
   );
 
   return (
-    <View className="flex-1 bg-background">
+    <Screen className="bg-background">
       <ScrollView
         contentContainerClassName="px-5 pb-10 lg:px-8"
         style={{ paddingTop: isDesktop ? 8 : insets.top + 12 }}
@@ -583,6 +583,6 @@ export default function Home() {
           )}
         </View>
       </ScrollView>
-    </View>
+    </Screen>
   );
 }

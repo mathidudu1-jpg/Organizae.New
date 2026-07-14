@@ -36,7 +36,6 @@ export default function EditCard() {
   const card = (cards ?? []).find((c) => c.id === id);
 
   const [name, setName] = useState('');
-  const [last4, setLast4] = useState('');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [limitRaw, setLimitRaw] = useState('');
   const [closingRaw, setClosingRaw] = useState('');
@@ -48,7 +47,6 @@ export default function EditCard() {
   useEffect(() => {
     if (card && !loaded) {
       setName(card.name);
-      setLast4(card.last4 ?? '');
       setAccountId(card.account_id);
       setLimitRaw(card.credit_limit != null ? String(card.credit_limit).replace('.', ',') : '');
       setClosingRaw(card.closing_day != null ? String(card.closing_day) : '');
@@ -88,11 +86,6 @@ export default function EditCard() {
       setError('Nome muito curto.');
       return;
     }
-    if (last4 && !/^\d{4}$/.test(last4)) {
-      setError('O final do cartão são os 4 últimos dígitos.');
-      return;
-    }
-
     let credit_limit: number | null = null;
     let closing_day: number | null = card.closing_day;
     let due_day: number | null = card.due_day;
@@ -124,7 +117,6 @@ export default function EditCard() {
         id: card.id,
         patch: {
           name: name.trim(),
-          last4: last4 || null,
           account_id: accountId,
           credit_limit,
           closing_day,
@@ -138,7 +130,7 @@ export default function EditCard() {
     }
   };
 
-  const preview = { ...card, name: name || card.name, last4: last4 || null, color };
+  const preview = { ...card, name: name || card.name, color };
 
   return (
     <View className="flex-1 bg-background">
@@ -193,29 +185,17 @@ export default function EditCard() {
 
           <Input label="Nome" value={name} onChangeText={setName} testID="card-name" />
 
-          <View className="flex-row gap-3 mt-4">
-            <View className="flex-1">
+          {isCredit && (
+            <View className="mt-4">
               <Input
-                label="Final (4 dígitos)"
-                keyboardType="number-pad"
-                maxLength={4}
-                value={last4}
-                onChangeText={(v) => setLast4(v.replace(/\D/g, ''))}
-                testID="card-last4"
+                label="Limite (R$)"
+                keyboardType="decimal-pad"
+                value={limitRaw}
+                onChangeText={setLimitRaw}
+                testID="card-limit"
               />
             </View>
-            {isCredit && (
-              <View className="flex-1">
-                <Input
-                  label="Limite (R$)"
-                  keyboardType="decimal-pad"
-                  value={limitRaw}
-                  onChangeText={setLimitRaw}
-                  testID="card-limit"
-                />
-              </View>
-            )}
-          </View>
+          )}
 
           {isCredit && (
             <View className="flex-row gap-3 mt-4">
